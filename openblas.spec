@@ -34,10 +34,13 @@ BuildRequires:	lapack-static
 %global lapacke 0
 %endif
 
+# PPC doesn't build in 0.2.5
+ExclusiveArch: x86_64 %{ix86}
+
 %global base_description \
-OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version. The\
-project is supported by the Lab of Parallel Software and Computational Science,\
-ISCAS. http://www.rdcps.ac.cn
+OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD \
+version. The project is supported by the Lab of Parallel Software and \
+Computational Science, ISCAS. http://www.rdcps.ac.cn
 
 
 %description
@@ -135,10 +138,10 @@ LAPACKE="NO_LAPACKE=0"
 LAPACKE="NO_LAPACKE=1"
 %endif
 
-make -C serial DYNAMIC_ARCH=1 USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 %{?avxflag} $LAPACKE
-make -C threaded DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 LIBPREFIX="libopenblasp" %{?avxflag} $LAPACKE
+make -C serial TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 %{?avxflag} $LAPACKE
+make -C threaded TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 LIBPREFIX="libopenblasp" %{?avxflag} $LAPACKE
 # USE_THREAD determines use of SMP, not of pthreads
-make -C openmp DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 LIBPREFIX="libopenblaso" %{?avxflag} $LAPACKE
+make -C openmp TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 LIBPREFIX="libopenblaso" %{?avxflag} $LAPACKE
 
 
 %install
