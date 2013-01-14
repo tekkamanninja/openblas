@@ -1,6 +1,6 @@
 Name:		openblas
 Version:	0.2.5
-Release:	6%{?dist}
+Release:	7%{?dist}
 Summary:	An optimized BLAS library based on GotoBLAS2
 Group:		Development/Libraries
 License:	BSD
@@ -16,7 +16,11 @@ BuildRequires:	gcc-gfortran
 # For execstack
 BuildRequires:	prelink
 # LAPACK
+%if 0%{?rhel} == 5
+BuildRequires:  lapack-devel
+%else
 BuildRequires:	lapack-static
+%endif
 
 # Compability for old versions of GCC
 %if 0%{?rhel} == 5
@@ -131,10 +135,10 @@ LAPACKE="NO_LAPACKE=0"
 LAPACKE="NO_LAPACKE=1"
 %endif
 
-make -C serial TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 %{?avxflag} $LAPACKE
-make -C threaded TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 LIBPREFIX="libopenblasp" %{?avxflag} $LAPACKE
+make -C serial DYNAMIC_ARCH=1 USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 %{?avxflag} $LAPACKE
+make -C threaded DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 LIBPREFIX="libopenblasp" %{?avxflag} $LAPACKE
 # USE_THREAD determines use of SMP, not of pthreads
-make -C openmp TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 LIBPREFIX="libopenblaso" %{?avxflag} $LAPACKE
+make -C openmp DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 LIBPREFIX="libopenblaso" %{?avxflag} $LAPACKE
 
 
 %install
@@ -228,6 +232,9 @@ rm -rf %{buildroot}
 %{_libdir}/lib%{name}p.a
 
 %changelog
+* Mon Jan 14 2013 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.5-7
+- Fix build on RHEL5 and ppc architecture.
+
 * Mon Dec 24 2012 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.5-6
 - Review fixes.
 
