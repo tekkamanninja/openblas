@@ -1,0 +1,81 @@
+diff -up xianyi-OpenBLAS-e42259c.mod/Makefile.orig xianyi-OpenBLAS-e42259c.mod/Makefile
+--- xianyi-OpenBLAS-e42259c.mod/Makefile.orig	2012-11-26 11:32:56.000000000 +0200
++++ xianyi-OpenBLAS-e42259c.mod/Makefile	2012-12-12 23:06:03.076579588 +0200
+@@ -199,18 +199,9 @@ hpl_p :
+ 	fi; \
+ 	done
+ 
+-ifeq ($(NO_LAPACK), 1)
+-netlib : 
++netlib :
++	-@$(MAKE) -C netliblapack
+ 
+-else
+-netlib : lapack-3.4.2 patch.for_lapack-3.4.2 $(NETLIB_LAPACK_DIR)/make.inc
+-ifndef NOFORTRAN
+-	-@$(MAKE) -C $(NETLIB_LAPACK_DIR) lapacklib
+-endif
+-ifndef NO_LAPACKE
+-	-@$(MAKE) -C $(NETLIB_LAPACK_DIR) lapackelib
+-endif
+-endif
+ 
+ prof_lapack : lapack-3.4.2 $(NETLIB_LAPACK_DIR)/make.inc
+ 	-@$(MAKE) -C $(NETLIB_LAPACK_DIR) lapack_prof
+@@ -241,37 +232,6 @@ endif
+ 	-@cat  make.inc >> $(NETLIB_LAPACK_DIR)/make.inc
+ endif
+ 
+-lapack-3.4.2 : lapack-3.4.2.tgz
+-ifndef NOFORTRAN
+-ifndef NO_LAPACK
+-	@if test `$(MD5SUM) lapack-3.4.2.tgz | $(AWK) '{print $$1}'` = 61bf1a8a4469d4bdb7604f5897179478; then \
+-		echo $(TAR) zxf $< ;\
+-		$(TAR) zxf $< && (cd $(NETLIB_LAPACK_DIR); $(PATCH) -p1 < ../patch.for_lapack-3.4.2) ;\
+-		rm -f $(NETLIB_LAPACK_DIR)/lapacke/make.inc ;\
+-	else \
+-		rm -rf $(NETLIB_LAPACK_DIR) ;\
+-		echo "	Cannot download lapack-3.4.2.tgz or the MD5 check sum is wrong (Please use orignal)."; \
+-		exit 1; \
+-	fi
+-endif
+-endif
+-
+-LAPACK_URL=http://www.netlib.org/lapack/lapack-3.4.2.tgz
+-
+-lapack-3.4.2.tgz :
+-ifndef NOFORTRAN
+-#http://stackoverflow.com/questions/7656425/makefile-ifeq-logical-or
+-ifeq ($(OSNAME), $(filter $(OSNAME),Darwin NetBSD))
+-	curl -O $(LAPACK_URL)
+-else
+-ifeq ($(OSNAME), FreeBSD)
+-	fetch $(LAPACK_URL)
+-else
+-	wget $(LAPACK_URL)
+-endif
+-endif
+-endif
+-
+ large.tgz : 
+ ifndef NOFORTRAN
+ 	-wget http://www.netlib.org/lapack/timing/large.tgz
+@@ -320,4 +280,4 @@ clean ::
+ 	rm -rf $(NETLIB_LAPACK_DIR) ;\
+ 	fi
+ 	@rm -f *.grd Makefile.conf_last config_last.h
+-	@echo Done.
+\ No newline at end of file
++	@echo Done.
+diff -up xianyi-OpenBLAS-e42259c.mod/Makefile.system.orig xianyi-OpenBLAS-e42259c.mod/Makefile.system
+--- xianyi-OpenBLAS-e42259c.mod/Makefile.system.orig	2012-11-26 11:32:56.000000000 +0200
++++ xianyi-OpenBLAS-e42259c.mod/Makefile.system	2012-12-12 22:56:06.147413758 +0200
+@@ -10,7 +10,7 @@ TOPDIR = .
+ endif
+ 
+ ifndef NETLIB_LAPACK_DIR
+-NETLIB_LAPACK_DIR = $(TOPDIR)/lapack-3.4.2
++NETLIB_LAPACK_DIR = $(TOPDIR)/netliblapack
+ endif
+ 
+ # Default C compiler
