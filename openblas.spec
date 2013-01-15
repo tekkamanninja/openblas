@@ -1,6 +1,6 @@
 Name:		openblas
 Version:	0.2.5
-Release:	7%{?dist}
+Release:	8%{?dist}
 Summary:	An optimized BLAS library based on GotoBLAS2
 Group:		Development/Libraries
 License:	BSD
@@ -34,7 +34,8 @@ BuildRequires:	lapack-static
 %global lapacke 0
 %endif
 
-# PPC doesn't build in 0.2.5
+# Upstream supports the package only on these architectures.
+# Runtime processor detection is not available on other archs.
 ExclusiveArch: x86_64 %{ix86}
 
 %global base_description \
@@ -153,6 +154,11 @@ make -C serial USE_THREAD=0 PREFIX=%{buildroot}%{_usr} install
 mkdir %{buildroot}%{_includedir}/%{name}
 mv %{buildroot}%{_includedir}/*.h %{buildroot}%{_includedir}/%{name}
 
+# Copy lapacke include files
+%if %{lapacke}
+cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
+%endif
+
 # Put libraries in correct location
 if [ %_lib != lib ]; then
  mkdir -p %{buildroot}%{_libdir}
@@ -235,6 +241,9 @@ rm -rf %{buildroot}
 %{_libdir}/lib%{name}p.a
 
 %changelog
+* Tue Jan 15 2013 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.5-8
+- Added LAPACKE include files.
+
 * Mon Jan 14 2013 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.5-7
 - Fix build on RHEL5 and ppc architecture.
 
