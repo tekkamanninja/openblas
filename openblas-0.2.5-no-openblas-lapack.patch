@@ -1,0 +1,42 @@
+diff -up serial/interface/Makefile.nolapack serial/interface/Makefile
+--- serial/interface/Makefile.nolapack	2012-11-27 01:24:53.000000000 +0200
++++ serial/interface/Makefile	2013-07-08 11:45:48.731294440 +0300
+@@ -372,15 +372,6 @@ XLAPACKOBJS	= \
+ 	xpotf2.$(SUFFIX) xpotrf.$(SUFFIX) xtrti2.$(SUFFIX) xtrtri.$(SUFFIX) \
+ 	xlaswp.$(SUFFIX) xgetrs.$(SUFFIX) xgesv.$(SUFFIX)  xpotri.$(SUFFIX) \
+ 
+-ifneq ($(NO_LAPACK), 1)
+-SBLASOBJS += $(SLAPACKOBJS)
+-DBLASOBJS += $(DLAPACKOBJS)
+-QBLASOBJS += $(QLAPACKOBJS)
+-CBLASOBJS += $(CLAPACKOBJS)
+-ZBLASOBJS += $(ZLAPACKOBJS)
+-XBLASOBJS += $(XLAPACKOBJS)
+-
+-endif
+ 
+ FUNCOBJS    = $(SBLASOBJS) $(DBLASOBJS) $(CBLASOBJS) $(ZBLASOBJS)
+ 
+@@ -786,7 +777,7 @@ endif
+ 
+ qgemv.$(SUFFIX) qgemv.$(PSUFFIX): gemv.c
+ 	$(CC) -c $(CFLAGS) -o $(@F) $<
+-	
++
+ ifndef USE_NETLIB_GEMV
+ cgemv.$(SUFFIX) cgemv.$(PSUFFIX): zgemv.c
+ 	$(CC) -c $(CFLAGS) -o $(@F) $<
+diff -up serial/lapack/Makefile.nolapack serial/lapack/Makefile
+--- serial/lapack/Makefile.nolapack	2012-11-27 01:24:53.000000000 +0200
++++ serial/lapack/Makefile	2013-07-08 10:39:00.578175235 +0300
+@@ -1,10 +1,6 @@
+ TOPDIR	= ..
+ include ../Makefile.system
+ 
+-SUBDIRS	= laswp getf2 getrf potf2 potrf lauu2 lauum trti2 trtri getrs
+-
+-FLAMEDIRS = laswp getf2 potf2 lauu2 trti2
+-
+ libs:
+ 	@for d in $(SUBDIRS) ; \
+ 	do if test -d $$d; then \
