@@ -19,9 +19,9 @@ BuildRequires:	gcc-gfortran
 BuildRequires:	prelink
 # LAPACK
 %if 0%{?rhel} == 5
-BuildRequires:  lapack-devel
+BuildRequires:  lapack-devel%{?_isa}
 %else
-BuildRequires:	lapack-static
+BuildRequires:	lapack-static%{?_isa}
 %endif
 
 # Compability for old versions of GCC
@@ -83,7 +83,7 @@ This package contains the development headers and libraries.
 %package static
 Summary:	Static version of OpenBLAS
 Group:		Development/Libraries
-Requires:	%{name}-devel = %{version}-%{release}
+Requires:	%{name}-devel%{?_isa} = %{version}-%{release}
 
 %description static
 %{base_description}
