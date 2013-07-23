@@ -1,17 +1,15 @@
 Name:		openblas
-Version:	0.2.5
-Release:	10%{?dist}
+Version:	0.2.7
+Release:	1%{?dist}
 Summary:	An optimized BLAS library based on GotoBLAS2
 Group:		Development/Libraries
 License:	BSD
 URL:		https://github.com/xianyi/OpenBLAS/
-Source0:	https://github.com/xianyi/OpenBLAS/archive/v0.2.5.tar.gz
+Source0:	https://github.com/xianyi/OpenBLAS/archive/v%{version}.tar.gz
 # Use system lapack
-Patch0:		openblas-0.2.5-system_lapack.patch
+Patch0:		openblas-0.2.7-system_lapack.patch
 # Drop extra p from threaded library name
 Patch1:	       	openblas-0.2.5-libname.patch
-# Don't use lapack functions from openblas, since they are buggy
-Patch2:	       	openblas-0.2.5-no-openblas-lapack.patch
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	gcc-gfortran
@@ -96,18 +94,20 @@ This package contains the static libraries.
 # Untar source
 tar zxf %{SOURCE0}
 cd OpenBLAS-%{version}
-%patch0 -p1 -b .netlib_lapack
+%patch0 -p1 -b .system_lapack
 %patch1 -p1 -b .libname
-%patch2 -p1 -b .nolapack
+
+# Get rid of bundled LAPACK sources
+rm -rf lapack-netlib
 
 # Setup LAPACK
 mkdir netliblapack
 cd netliblapack
 ar x %{_libdir}/liblapack_pic.a
-## Get rid of duplicate functions (disabled because of patch2)
-#for f in getf2 getrf getrs laswp lauu2 lauum potf2 potrf trti2 trtri; do
-# \rm {c,d,s,z}$f.o
-#done
+# Get rid of duplicate functions. See list in Makefile of lapack directory
+for f in laswp getf2 getrf potf2 potrf lauu2 lauum trti2 trtri getrs; do
+    \rm {c,d,s,z}$f.o
+done
 
 # LAPACKE
 %if %{lapacke}
@@ -235,7 +235,7 @@ rm -rf %{buildroot}
 %{_libdir}/lib%{name}.so
 %{_libdir}/lib%{name}o.so
 %{_libdir}/lib%{name}p.so
-%{_includedir}/%{name}
+%{_includedir}/%{name}/
 
 %files static
 %defattr(-,root,root,-)
@@ -244,9 +244,14 @@ rm -rf %{buildroot}
 %{_libdir}/lib%{name}p.a
 
 %changelog
+* Tue Jul 23 2013 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.7-1
+- Update to 0.2.7.
+- Use OpenBLAS versions of LAPACK functions, as they seem to be
+  working now.
+
 * Mon Jul 08 2013 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.5-10
 - Due to long standing bug, replace all OpenBLAS LAPACK functions with
-  generic ones, so that package can be released in stable.
+  generic ones, so that package can finally be released in stable.
 
 * Thu Feb 14 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.2.5-9
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
