@@ -9,15 +9,15 @@ Source0:	https://github.com/xianyi/OpenBLAS/archive/v%{version}.tar.gz
 # Use system lapack
 Patch0:		openblas-0.2.7-system_lapack.patch
 # Drop extra p from threaded library name
-Patch1:	       	openblas-0.2.5-libname.patch
+Patch1:		openblas-0.2.5-libname.patch
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	gcc-gfortran
 # For execstack
 BuildRequires:	prelink
 # LAPACK
-%if 0%{?rhel} == 5
-BuildRequires:  lapack-devel%{?_isa}
+%if 0%{?rhel} == 5 || 0%{?rhel} == 6
+BuildRequires:	lapack-devel%{?_isa}
 %else
 BuildRequires:	lapack-static%{?_isa}
 %endif
@@ -36,7 +36,7 @@ BuildRequires:	lapack-static%{?_isa}
 
 # Upstream supports the package only on these architectures.
 # Runtime processor detection is not available on other archs.
-ExclusiveArch: x86_64 %{ix86}
+ExclusiveArch:	x86_64 %{ix86}
 
 %global base_description \
 OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD \
