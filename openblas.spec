@@ -1,6 +1,6 @@
 Name:		openblas
 Version:	0.2.7
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	An optimized BLAS library based on GotoBLAS2
 Group:		Development/Libraries
 License:	BSD
@@ -244,6 +244,9 @@ rm -rf %{buildroot}
 %{_libdir}/lib%{name}p.a
 
 %changelog
+* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.2.7-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
+
 * Tue Jul 23 2013 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.7-1
 - Update to 0.2.7.
 - Use OpenBLAS versions of LAPACK functions, as they seem to be
