@@ -1,25 +1,27 @@
-Name:		openblas
-Version:	0.2.8
-Release:	2%{?dist}
-Summary:	An optimized BLAS library based on GotoBLAS2
-Group:		Development/Libraries
-License:	BSD
-URL:		https://github.com/xianyi/OpenBLAS/
-Source0:	https://github.com/xianyi/OpenBLAS/archive/v%{version}.tar.gz
+Name:           openblas
+Version:        0.2.9
+Release:        1%{?dist}
+Summary:        An optimized BLAS library based on GotoBLAS2
+Group:          Development/Libraries
+License:        BSD
+URL:            https://github.com/xianyi/OpenBLAS/
+Source0:        https://github.com/xianyi/OpenBLAS/archive/v%{version}.tar.gz
 # Use system lapack
-Patch0:		openblas-0.2.7-system_lapack.patch
+Patch0:         openblas-0.2.9-system_lapack.patch
 # Drop extra p from threaded library name
-Patch1:		openblas-0.2.5-libname.patch
-BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+Patch1:         openblas-0.2.5-libname.patch
+# Don't test link against functions in lapacke 3.5.0 if only 3.4.0 is available
+Patch2:         openblas-0.2.9-lapacke.patch
+BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
-BuildRequires:	gcc-gfortran
+BuildRequires:  gcc-gfortran
 # For execstack
-BuildRequires:	prelink
+BuildRequires:  prelink
 # LAPACK
 %if 0%{?rhel} == 5 || 0%{?rhel} == 6
-BuildRequires:	lapack-devel%{?_isa}
+BuildRequires:  lapack-devel%{?_isa}
 %else
-BuildRequires:	lapack-static%{?_isa}
+BuildRequires:  lapack-static%{?_isa}
 %endif
 
 # Compability for old versions of GCC
@@ -34,9 +36,25 @@ BuildRequires:	lapack-static%{?_isa}
 %global lapacke 0
 %endif
 
+# Build 64-bit interface binaries?
+%if 0%{?rhel} == 5 || 0%{?rhel} == 6
+# RPM too old to know __isa_bits in RHEL 5, and lapack64 doesn't exist in RHEL 6
+%global build64 0
+%else
+%if 0%{?__isa_bits} == 64
+%global build64 1
+%else
+%global build64 0
+%endif
+%endif
+
+%if %build64
+BuildRequires:  lapack64-static
+%endif
+
 # Upstream supports the package only on these architectures.
 # Runtime processor detection is not available on other archs.
-ExclusiveArch:	x86_64 %{ix86}
+ExclusiveArch:  x86_64 %{ix86}
 
 %global base_description \
 OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD \
@@ -48,9 +66,8 @@ Computational Science, ISCAS. http://www.rdcps.ac.cn
 %{base_description}
 
 %package openmp
-Summary:	An optimized BLAS library based on GotoBLAS2, OpenMP version
-Group:		Development/Libraries
-
+Summary:        An optimized BLAS library based on GotoBLAS2, OpenMP version
+Group:          Development/Libraries
 
 %description openmp
 %{base_description}
@@ -58,20 +75,58 @@ Group:		Development/Libraries
 This package contains the library compiled with OpenMP support.
 
 %package threads
-Summary:	An optimized BLAS library based on GotoBLAS2, pthreads version
-Group:		Development/Libraries
+Summary:        An optimized BLAS library based on GotoBLAS2, pthreads version
+Group:          Development/Libraries
 
 %description threads
 %{base_description}
 
 This package contains the library compiled with threading support.
 
+%if %build64
+%package serial64
+Summary:        An optimized BLAS library based on GotoBLAS2, serial version
+Group:          Development/Libraries
+
+%description serial64
+%{base_description}
+
+This package contains the sequential library compiled with a 64-bit
+interface.
+
+%package openmp64
+Summary:        An optimized BLAS library based on GotoBLAS2, OpenMP version
+Group:          Development/Libraries
+
+%description openmp64
+%{base_description}
+
+This package contains the library compiled with OpenMP support and
+64-bit interface.
+
+%package threads64
+Summary:        An optimized BLAS library based on GotoBLAS2, pthreads version
+Group:          Development/Libraries
+
+%description threads64
+%{base_description}
+
+This package contains the library compiled with threading support and
+64-bit interface.
+%endif
+
+
 %package devel
-Summary:	Development headers and libraries for OpenBLAS
-Group:		Development/Libraries
-Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	%{name}-openmp%{?_isa} = %{version}-%{release}
-Requires:	%{name}-threads%{?_isa} = %{version}-%{release}
+Summary:        Development headers and libraries for OpenBLAS
+Group:          Development/Libraries
+Requires:       %{name}%{?_isa} = %{version}-%{release}
+Requires:       %{name}-openmp%{?_isa} = %{version}-%{release}
+Requires:       %{name}-threads%{?_isa} = %{version}-%{release}
+%if %build64
+Requires:       %{name}-openmp64%{?_isa} = %{version}-%{release}
+Requires:       %{name}-threads64%{?_isa} = %{version}-%{release}
+Requires:       %{name}-serial64%{?_isa} = %{version}-%{release}
+%endif
 
 %description devel
 %{base_description}
@@ -79,9 +134,9 @@ Requires:	%{name}-threads%{?_isa} = %{version}-%{release}
 This package contains the development headers and libraries.
 
 %package static
-Summary:	Static version of OpenBLAS
-Group:		Development/Libraries
-Requires:	%{name}-devel%{?_isa} = %{version}-%{release}
+Summary:        Static version of OpenBLAS
+Group:          Development/Libraries
+Requires:       %{name}-devel%{?_isa} = %{version}-%{release}
 
 %description static
 %{base_description}
@@ -96,11 +151,25 @@ tar zxf %{SOURCE0}
 cd OpenBLAS-%{version}
 %patch0 -p1 -b .system_lapack
 %patch1 -p1 -b .libname
+%if 0%{?fedora} > 0 && 0%{?fedora} < 21
+%patch2 -p1 -b .lapacke
+%endif
 
 # Get rid of bundled LAPACK sources
 rm -rf lapack-netlib
 
-# Setup LAPACK
+# Make serial, threaded and OpenMP versions; as well as 64-bit versions
+cd ..
+cp -ar OpenBLAS-%{version} openmp
+cp -ar OpenBLAS-%{version} threaded
+%if %build64
+cp -ar OpenBLAS-%{version} openmp64
+cp -ar OpenBLAS-%{version} threaded64
+cp -ar OpenBLAS-%{version} serial64
+%endif
+mv OpenBLAS-%{version} serial
+
+# Setup 32-bit interface LAPACK
 mkdir netliblapack
 cd netliblapack
 ar x %{_libdir}/liblapack_pic.a
@@ -129,11 +198,49 @@ cp -a %{_includedir}/lapacke .
 %endif
 cd ..
 
-# Make serial, threaded and OpenMP versions
+# Copy in place
+for d in serial threaded openmp; do
+    cp -pr netliblapack $d
+done
+rm -rf netliblapack
+
+
+# Setup 64-bit interface LAPACK
+%if %build64
+mkdir netliblapack64
+cd netliblapack64
+ar x %{_libdir}/liblapack64_pic.a
+# Get rid of duplicate functions. See list in Makefile of lapack directory
+for f in laswp getf2 getrf potf2 potrf lauu2 lauum trti2 trtri getrs; do
+    \rm {c,d,s,z}$f.o
+done
+
+# LAPACKE, no 64-bit interface
+%if %{lapacke}
+ar x %{_libdir}/liblapacke.a
+%endif
+
+# Create makefile
+echo "TOPDIR = .." > Makefile
+echo "include ../Makefile.system" >> Makefile
+echo "COMMONOBJS = \\" >> Makefile
+for i in *.o; do
+    echo "$i \\" >> Makefile
+done
+echo -e "\n\ninclude \$(TOPDIR)/Makefile.tail" >> Makefile
+
+%if %{lapacke}
+# Copy include files
+cp -a %{_includedir}/lapacke .
+%endif
 cd ..
-cp -ar OpenBLAS-%{version} openmp
-cp -ar OpenBLAS-%{version} threaded
-mv OpenBLAS-%{version} serial
+
+# Copy in place
+for d in serial64 threaded64 openmp64; do
+    cp -pr netliblapack64 $d/netliblapack
+done
+rm -rf netliblapack64
+%endif
 
 %build
 %if %{lapacke}
@@ -142,11 +249,19 @@ LAPACKE="NO_LAPACKE=0"
 LAPACKE="NO_LAPACKE=1"
 %endif
 
-make -C serial TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 %{?avxflag} $LAPACKE
-make -C threaded TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 LIBPREFIX="libopenblasp" %{?avxflag} $LAPACKE
-# USE_THREAD determines use of SMP, not of pthreads
-make -C openmp TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" NUM_THREADS=32 LIBPREFIX="libopenblaso" %{?avxflag} $LAPACKE
+# Maximum possible amount of processors
+NMAX="NUM_THREADS=128"
 
+make -C serial     TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblas"    %{?avxflag} $LAPACKE INTERFACE64=0
+make -C threaded   TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblasp"   %{?avxflag} $LAPACKE INTERFACE64=0
+# USE_THREAD determines use of SMP, not of pthreads
+make -C openmp     TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblaso"   %{?avxflag} $LAPACKE INTERFACE64=0
+
+%if %build64
+make -C serial64   TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblas64"  %{?avxflag} $LAPACKE INTERFACE64=1
+make -C threaded64 TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblasp64" %{?avxflag} $LAPACKE INTERFACE64=1
+make -C openmp64   TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblaso64" %{?avxflag} $LAPACKE INTERFACE64=1
+%endif
 
 %install
 rm -rf %{buildroot}
@@ -182,6 +297,21 @@ plibname=`echo ${slibname} | sed "s|lib%{name}|lib%{name}p|g"`
 install -D -p -m 755 threaded/${plibname}.so %{buildroot}%{_libdir}/${plibname}.so
 install -D -p -m 644 threaded/${plibname}.a %{buildroot}%{_libdir}/lib%{name}p.a
 
+# Install the 64-bit interface libraries
+%if %build64
+slibname64=`echo ${slibname} | sed "s|lib%{name}|lib%{name}64|g"`
+install -D -p -m 755 serial64/${slibname64}.so %{buildroot}%{_libdir}/${slibname64}.so
+install -D -p -m 644 serial64/${slibname64}.a %{buildroot}%{_libdir}/lib%{name}64.a
+
+olibname64=`echo ${slibname} | sed "s|lib%{name}|lib%{name}o64|g"`
+install -D -p -m 755 openmp64/${olibname64}.so %{buildroot}%{_libdir}/${olibname64}.so
+install -D -p -m 644 openmp64/${olibname64}.a %{buildroot}%{_libdir}/lib%{name}o64.a
+
+plibname64=`echo ${slibname} | sed "s|lib%{name}|lib%{name}p64|g"`
+install -D -p -m 755 threaded64/${plibname64}.so %{buildroot}%{_libdir}/${plibname64}.so
+install -D -p -m 644 threaded64/${plibname64}.a %{buildroot}%{_libdir}/lib%{name}p64.a
+%endif
+
 # Fix source permissions (also applies to LAPACK)
 find -name \*.f -exec chmod 644 {} \;
 
@@ -196,6 +326,19 @@ ln -sf ${olibname}.so lib%{name}o.so.0
 # Threaded libraries
 ln -sf ${plibname}.so lib%{name}p.so
 ln -sf ${plibname}.so lib%{name}p.so.0
+
+%if %build64
+# Serial libraries
+ln -sf ${slibname64}.so lib%{name}64.so
+ln -sf ${slibname64}.so lib%{name}64.so.0
+# OpenMP libraries
+ln -sf ${olibname64}.so lib%{name}o64.so
+ln -sf ${olibname64}.so lib%{name}o64.so.0
+# Threaded libraries
+ln -sf ${plibname64}.so lib%{name}p64.so
+ln -sf ${plibname64}.so lib%{name}p64.so.0
+%endif
+
 
 # Get rid of executable stacks
 for lib in %{buildroot}%{_libdir}/libopenblas{,o,p}-*.so; do
@@ -230,20 +373,52 @@ rm -rf %{buildroot}
 %{_libdir}/lib%{name}p-*.so
 %{_libdir}/lib%{name}p.so.*
 
+%if %build64
+%files serial64
+%defattr(-,root,root,-)
+%{_libdir}/lib%{name}64-*.so
+%{_libdir}/lib%{name}64.so.*
+
+%files openmp64
+%defattr(-,root,root,-)
+%{_libdir}/lib%{name}o64-*.so
+%{_libdir}/lib%{name}o64.so.*
+
+%files threads64
+%defattr(-,root,root,-)
+%{_libdir}/lib%{name}p64-*.so
+%{_libdir}/lib%{name}p64.so.*
+%endif
+
 %files devel
 %defattr(-,root,root,-)
+%{_includedir}/%{name}/
 %{_libdir}/lib%{name}.so
 %{_libdir}/lib%{name}o.so
 %{_libdir}/lib%{name}p.so
-%{_includedir}/%{name}/
+%if %build64
+%{_libdir}/lib%{name}64.so
+%{_libdir}/lib%{name}o64.so
+%{_libdir}/lib%{name}p64.so
+%endif
 
 %files static
 %defattr(-,root,root,-)
 %{_libdir}/lib%{name}.a
 %{_libdir}/lib%{name}o.a
 %{_libdir}/lib%{name}p.a
+%if %build64
+%{_libdir}/lib%{name}64.a
+%{_libdir}/lib%{name}o64.a
+%{_libdir}/lib%{name}p64.a
+%endif
 
 %changelog
+* Wed Jun 11 2014 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.9-1
+- Increase maximum amount of cores from 32 to 128.
+- Add 64-bit interface support. (BZ #1088256)
+- Update to 0.2.9. (BZ #1043083)
+
 * Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.2.8-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
 
