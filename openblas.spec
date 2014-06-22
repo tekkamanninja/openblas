@@ -12,6 +12,8 @@ Patch0:         openblas-0.2.9-system_lapack.patch
 Patch1:         openblas-0.2.5-libname.patch
 # Don't test link against functions in lapacke 3.5.0 if only 3.4.0 is available
 Patch2:         openblas-0.2.9-lapacke.patch
+# Fix build on i386: https://github.com/wernsaar/OpenBLAS/commit/438002204d79a0393999ae4fe8bc9b5125c45d97.patch
+Patch3:         openblas-0.2.9-i386.patch
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:  gcc-gfortran
@@ -154,6 +156,7 @@ cd OpenBLAS-%{version}
 %if 0%{?fedora} > 0 && 0%{?fedora} < 21
 %patch2 -p1 -b .lapacke
 %endif
+%patch3 -p1 -b .i386
 
 # Get rid of bundled LAPACK sources
 rm -rf lapack-netlib
