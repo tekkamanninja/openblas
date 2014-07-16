@@ -1,5 +1,5 @@
 Name:           openblas
-Version:        0.2.9
+Version:        0.2.10
 Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
@@ -417,6 +417,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Jul 16 2014 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.10-1
+- Update to 0.2.10.
+
 * Wed Jun 11 2014 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.9-1
 - Increase maximum amount of cores from 32 to 128.
 - Add 64-bit interface support. (BZ #1088256)
