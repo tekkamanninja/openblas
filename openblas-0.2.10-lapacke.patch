@@ -1,7 +1,7 @@
-diff -up OpenBLAS-0.2.9/exports/gensymbol.lapacke OpenBLAS-0.2.9/exports/gensymbol
---- OpenBLAS-0.2.9/exports/gensymbol.lapacke	2014-06-10 16:55:47.000000000 +0300
-+++ OpenBLAS-0.2.9/exports/gensymbol	2014-06-18 10:42:45.852966229 +0300
-@@ -170,7 +170,7 @@
+diff -up OpenBLAS-0.2.10/exports/gensymbol.lapacke OpenBLAS-0.2.10/exports/gensymbol
+--- OpenBLAS-0.2.10/exports/gensymbol.lapacke	2014-07-16 12:04:30.000000000 +0200
++++ OpenBLAS-0.2.10/exports/gensymbol	2014-07-16 19:35:48.856855925 +0200
+@@ -175,7 +175,7 @@
  		sggglm, sgghrd, sgglse, sggqrf,
  		sggrqf, sggsvd, sggsvp, sgtcon, sgtrfs, sgtsv,
  		sgtsvx, sgttrf, sgttrs, sgtts2, shgeqz,
@@ -10,7 +10,7 @@ diff -up OpenBLAS-0.2.9/exports/gensymbol.lapacke OpenBLAS-0.2.9/exports/gensymb
  		slaein, slaexc, slag2,  slags2, slagtm, slagv2, slahqr,
  		slahrd, slahr2, slaic1, slaln2, slals0, slalsa, slalsd,
  		slangb, slange, slangt, slanhs, slansb, slansp,
-@@ -251,7 +251,7 @@
+@@ -256,7 +256,7 @@
  		chpevx, chpgst, chpgv,  chpgvd, chpgvx, chprfs, chpsv,
  		chpsvx,
  		chptrd, chptrf, chptri, chptrs, chsein, chseqr, clabrd,
@@ -19,7 +19,7 @@ diff -up OpenBLAS-0.2.9/exports/gensymbol.lapacke OpenBLAS-0.2.9/exports/gensymb
  		claed0, claed7, claed8,
  		claein, claesy, claev2, clags2, clagtm,
  		clahef, clahqr,
-@@ -318,7 +318,7 @@
+@@ -323,7 +323,7 @@
  		dggglm, dgghrd, dgglse, dggqrf,
  		dggrqf, dggsvd, dggsvp, dgtcon, dgtrfs, dgtsv,
  		dgtsvx, dgttrf, dgttrs, dgtts2, dhgeqz,
@@ -28,7 +28,7 @@ diff -up OpenBLAS-0.2.9/exports/gensymbol.lapacke OpenBLAS-0.2.9/exports/gensymb
  		dlaein, dlaexc, dlag2,  dlags2, dlagtm, dlagv2, dlahqr,
  		dlahrd, dlahr2, dlaic1, dlaln2, dlals0, dlalsa, dlalsd,
  		dlangb, dlange, dlangt, dlanhs, dlansb, dlansp,
-@@ -393,7 +393,7 @@
+@@ -398,7 +398,7 @@
  		zhpevx, zhpgst, zhpgv,  zhpgvd, zhpgvx, zhprfs, zhpsv,
  		zhpsvx,
  		zhptrd, zhptrf, zhptri, zhptrs, zhsein, zhseqr, zlabrd,
@@ -37,7 +37,7 @@ diff -up OpenBLAS-0.2.9/exports/gensymbol.lapacke OpenBLAS-0.2.9/exports/gensymb
  		zlaed0, zlaed7, zlaed8,
  		zlaein, zlaesy, zlaev2, zlags2, zlagtm,
  		zlahef, zlahqr,
-@@ -840,10 +840,6 @@
+@@ -845,10 +845,6 @@
      LAPACKE_chseqr_work,
      LAPACKE_clacgv,
      LAPACKE_clacgv_work,
@@ -48,7 +48,7 @@ diff -up OpenBLAS-0.2.9/exports/gensymbol.lapacke OpenBLAS-0.2.9/exports/gensymb
      LAPACKE_clacpy,
      LAPACKE_clacpy_work,
      LAPACKE_clag2z,
-@@ -979,8 +975,6 @@
+@@ -984,8 +980,6 @@
      LAPACKE_csyrfs,
      LAPACKE_csyrfs_work,
      LAPACKE_csysv,
@@ -57,7 +57,7 @@ diff -up OpenBLAS-0.2.9/exports/gensymbol.lapacke OpenBLAS-0.2.9/exports/gensymb
      LAPACKE_csysv_work,
      LAPACKE_csysvx,
      LAPACKE_csysvx_work,
-@@ -1254,8 +1248,6 @@
+@@ -1259,8 +1253,6 @@
      LAPACKE_dhsein_work,
      LAPACKE_dhseqr,
      LAPACKE_dhseqr_work,
@@ -66,7 +66,7 @@ diff -up OpenBLAS-0.2.9/exports/gensymbol.lapacke OpenBLAS-0.2.9/exports/gensymb
      LAPACKE_dlacpy,
      LAPACKE_dlacpy_work,
      LAPACKE_dlag2s,
-@@ -1505,8 +1497,6 @@
+@@ -1510,8 +1502,6 @@
      LAPACKE_dsyrfs,
      LAPACKE_dsyrfs_work,
      LAPACKE_dsysv,
@@ -75,7 +75,7 @@ diff -up OpenBLAS-0.2.9/exports/gensymbol.lapacke OpenBLAS-0.2.9/exports/gensymb
      LAPACKE_dsysv_work,
      LAPACKE_dsysvx,
      LAPACKE_dsysvx_work,
-@@ -1744,8 +1734,6 @@
+@@ -1749,8 +1739,6 @@
      LAPACKE_shsein_work,
      LAPACKE_shseqr,
      LAPACKE_shseqr_work,
@@ -84,7 +84,7 @@ diff -up OpenBLAS-0.2.9/exports/gensymbol.lapacke OpenBLAS-0.2.9/exports/gensymb
      LAPACKE_slacpy,
      LAPACKE_slacpy_work,
      LAPACKE_slag2d,
-@@ -1991,8 +1979,6 @@
+@@ -1996,8 +1984,6 @@
      LAPACKE_ssyrfs,
      LAPACKE_ssyrfs_work,
      LAPACKE_ssysv,
@@ -93,7 +93,7 @@ diff -up OpenBLAS-0.2.9/exports/gensymbol.lapacke OpenBLAS-0.2.9/exports/gensymb
      LAPACKE_ssysv_work,
      LAPACKE_ssysvx,
      LAPACKE_ssysvx_work,
-@@ -2316,10 +2302,6 @@
+@@ -2321,10 +2307,6 @@
      LAPACKE_zhseqr_work,
      LAPACKE_zlacgv,
      LAPACKE_zlacgv_work,
@@ -104,7 +104,7 @@ diff -up OpenBLAS-0.2.9/exports/gensymbol.lapacke OpenBLAS-0.2.9/exports/gensymb
      LAPACKE_zlacpy,
      LAPACKE_zlacpy_work,
      LAPACKE_zlag2c,
-@@ -2455,8 +2437,6 @@
+@@ -2460,8 +2442,6 @@
      LAPACKE_zsyrfs,
      LAPACKE_zsyrfs_work,
      LAPACKE_zsysv,
@@ -113,28 +113,28 @@ diff -up OpenBLAS-0.2.9/exports/gensymbol.lapacke OpenBLAS-0.2.9/exports/gensymb
      LAPACKE_zsysv_work,
      LAPACKE_zsysvx,
      LAPACKE_zsysvx_work,
-@@ -2700,20 +2680,20 @@
+@@ -2705,20 +2685,20 @@
  #These function may need 2 underscores.
  @lapack_embeded_underscore_objs=(xerbla_array, chla_transtype, slasyf_rook,
  				 ssytf2_rook, ssytrf_rook, ssytrs_rook,
 -				 ssytri_rook, ssycon_rook, ssysv_rook,
-+				 ssytri_rook, ssycon_rook, 
- 				 chetf2_rook, chetrf_rook, chetri_rook, 
++				 ssytri_rook, ssycon_rook,
+ 				 chetf2_rook, chetrf_rook, chetri_rook,
  				 chetrs_rook, checon_rook, chesv_rook,
- 				 clahef_rook, clasyf_rook, 
- 				 csytf2_rook, csytrf_rook, csytrs_rook, 
--				 csytri_rook, csycon_rook, csysv_rook, 
-+				 csytri_rook, csycon_rook, 
- 				 dlasyf_rook, 
- 				 dsytf2_rook, dsytrf_rook, dsytrs_rook, 
--				 dsytri_rook, dsycon_rook, dsysv_rook, 
-+				 dsytri_rook, dsycon_rook, 
- 				 zhetf2_rook, zhetrf_rook, zhetri_rook, 
+ 				 clahef_rook, clasyf_rook,
+ 				 csytf2_rook, csytrf_rook, csytrs_rook,
+-				 csytri_rook, csycon_rook, csysv_rook,
++				 csytri_rook, csycon_rook,
+ 				 dlasyf_rook,
+ 				 dsytf2_rook, dsytrf_rook, dsytrs_rook,
+-				 dsytri_rook, dsycon_rook, dsysv_rook,
++				 dsytri_rook, dsycon_rook,
+ 				 zhetf2_rook, zhetrf_rook, zhetri_rook,
  				 zhetrs_rook, zhecon_rook, zhesv_rook,
  				 zlahef_rook, zlasyf_rook,
  				 zsytf2_rook, zsytrf_rook, zsytrs_rook,
 -				 zsytri_rook, zsycon_rook, zsysv_rook,
 +				 zsytri_rook, zsycon_rook,
- 				 
+ 
  
  

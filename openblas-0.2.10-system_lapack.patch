@@ -1,13 +1,26 @@
-diff -up OpenBLAS-0.2.9/Makefile.system_lapack OpenBLAS-0.2.9/Makefile
---- OpenBLAS-0.2.9/Makefile.system_lapack	2014-06-11 16:16:33.024212839 +0300
-+++ OpenBLAS-0.2.9/Makefile	2014-06-11 16:19:02.742528480 +0300
-@@ -205,51 +205,8 @@ hpl_p :
+diff -up OpenBLAS-0.2.10/Makefile.system.system_lapack OpenBLAS-0.2.10/Makefile.system
+--- OpenBLAS-0.2.10/Makefile.system.system_lapack	2014-07-16 12:04:30.000000000 +0200
++++ OpenBLAS-0.2.10/Makefile.system	2014-07-16 19:24:55.233859424 +0200
+@@ -9,7 +9,7 @@ ifndef TOPDIR
+ TOPDIR = .
+ endif
+ 
+-NETLIB_LAPACK_DIR = $(TOPDIR)/lapack-netlib
++NETLIB_LAPACK_DIR = $(TOPDIR)/netliblapack
+ 
+ # Default C compiler
+ # - Only set if not specified on the command line or inherited from the environment.
+diff -up OpenBLAS-0.2.10/Makefile.system_lapack OpenBLAS-0.2.10/Makefile
+--- OpenBLAS-0.2.10/Makefile.system_lapack	2014-07-16 19:24:55.231859424 +0200
++++ OpenBLAS-0.2.10/Makefile	2014-07-16 19:29:58.370855854 +0200
+@@ -209,64 +209,9 @@ hpl_p :
  	fi; \
  	done
  
 -ifeq ($(NO_LAPACK), 1)
--netlib : 
--
+ netlib :
++	@$(MAKE) -C $(NETLIB_LAPACK_DIR)
+ 
 -else
 -netlib : lapack_prebuild
 -ifndef NOFORTRAN
@@ -43,27 +56,26 @@ diff -up OpenBLAS-0.2.9/Makefile.system_lapack OpenBLAS-0.2.9/Makefile
 -	-@echo "SUFFIX      = $(SUFFIX)" >> $(NETLIB_LAPACK_DIR)/make.inc
 -	-@echo "PSUFFIX     = $(PSUFFIX)" >> $(NETLIB_LAPACK_DIR)/make.inc
 -	-@echo "CEXTRALIB   = $(EXTRALIB)" >> $(NETLIB_LAPACK_DIR)/make.inc
--ifeq ($(F_COMPILER), GFORTRAN)
+-ifeq ($(FC), GFORTRAN)
 -	-@echo "TIMER       = INT_ETIME" >> $(NETLIB_LAPACK_DIR)/make.inc
+-ifdef SMP
+-	-@echo "LOADER      = $(FC) -pthread" >> $(NETLIB_LAPACK_DIR)/make.inc
+-else
+-	-@echo "LOADER      = $(FC)" >> $(NETLIB_LAPACK_DIR)/make.inc
+-endif
 -else
 -	-@echo "TIMER       = NONE" >> $(NETLIB_LAPACK_DIR)/make.inc
+-	-@echo "LOADER      = $(FC)" >> $(NETLIB_LAPACK_DIR)/make.inc
 -endif
 -	-@cat  make.inc >> $(NETLIB_LAPACK_DIR)/make.inc
 -endif
-+netlib :
-+	@$(MAKE) -C $(NETLIB_LAPACK_DIR)
+-
+-large.tgz :
+-ifndef NOFORTRAN
+-	if [ ! -a $< ]; then
+-	-wget http://www.netlib.org/lapack/timing/large.tgz;
+-	fi
+-endif
  
- large.tgz : 
+ timing.tgz :
  ifndef NOFORTRAN
-diff -up OpenBLAS-0.2.9/Makefile.system.system_lapack OpenBLAS-0.2.9/Makefile.system
---- OpenBLAS-0.2.9/Makefile.system.system_lapack	2014-06-10 16:55:47.000000000 +0300
-+++ OpenBLAS-0.2.9/Makefile.system	2014-06-11 16:16:33.024212839 +0300
-@@ -9,7 +9,7 @@ ifndef TOPDIR
- TOPDIR = .
- endif
- 
--NETLIB_LAPACK_DIR = $(TOPDIR)/lapack-netlib
-+NETLIB_LAPACK_DIR = $(TOPDIR)/netliblapack
- 
- # Default C compiler
- # - Only set if not specified on the command line or inherited from the environment.
