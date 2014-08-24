@@ -1,12 +1,12 @@
 diff -up OpenBLAS-0.2.11/Makefile.system_lapack OpenBLAS-0.2.11/Makefile
---- OpenBLAS-0.2.11/Makefile.system_lapack	2014-08-18 05:16:14.000000000 +0200
-+++ OpenBLAS-0.2.11/Makefile	2014-08-18 21:33:52.341214018 +0200
-@@ -209,58 +209,6 @@ hpl_p :
+--- OpenBLAS-0.2.11/Makefile.system_lapack	2014-08-17 20:16:14.000000000 -0700
++++ OpenBLAS-0.2.11/Makefile	2014-08-23 21:02:54.004245912 -0700
+@@ -209,57 +209,8 @@ hpl_p :
  	fi; \
  	done
  
 -ifeq ($(NO_LAPACK), 1)
--netlib :
+ netlib :
 -
 -else
 -netlib : lapack_prebuild
@@ -56,13 +56,13 @@ diff -up OpenBLAS-0.2.11/Makefile.system_lapack OpenBLAS-0.2.11/Makefile
 -endif
 -	-@cat  make.inc >> $(NETLIB_LAPACK_DIR)/make.inc
 -endif
--
++	@$(MAKE) -C $(NETLIB_LAPACK_DIR)
+ 
  large.tgz :
  ifndef NOFORTRAN
- 	if [ ! -a $< ]; then
 diff -up OpenBLAS-0.2.11/Makefile.system.system_lapack OpenBLAS-0.2.11/Makefile.system
---- OpenBLAS-0.2.11/Makefile.system.system_lapack	2014-08-18 05:16:14.000000000 +0200
-+++ OpenBLAS-0.2.11/Makefile.system	2014-08-18 21:33:06.792213605 +0200
+--- OpenBLAS-0.2.11/Makefile.system.system_lapack	2014-08-17 20:16:14.000000000 -0700
++++ OpenBLAS-0.2.11/Makefile.system	2014-08-23 21:02:37.723976242 -0700
 @@ -9,7 +9,7 @@ ifndef TOPDIR
  TOPDIR = .
  endif
