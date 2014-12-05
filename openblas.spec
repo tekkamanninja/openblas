@@ -343,11 +343,13 @@ ln -sf ${plibname64}.so lib%{name}p64.so
 ln -sf ${plibname64}.so lib%{name}p64.so.0
 %endif
 
-
 # Get rid of executable stacks
 for lib in %{buildroot}%{_libdir}/libopenblas{,o,p}-*.so; do
  execstack -c $lib
 done
+
+# Get rid of generated CMake config
+rm -rf %{buildroot}%{_usr}/cmake
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
