@@ -1,5 +1,5 @@
 Name:           openblas
-Version:        0.2.12
+Version:        0.2.13
 Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
@@ -418,6 +418,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Dec 05 2014 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.13-1
+- Update to 0.2.13.
+
 * Mon Oct 13 2014 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.12-1
 - Update to 0.2.12.
 
