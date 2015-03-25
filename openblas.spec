@@ -272,20 +272,10 @@ rm -rf %{buildroot}
 # Install serial library and headers
 make -C serial USE_THREAD=0 OPENBLAS_LIBRARY_DIR=%{buildroot}%{_libdir} OPENBLAS_INCLUDE_DIR=%{buildroot}%{_includedir}/%name OPENBLAS_BINARY_DIR=%{buildroot}%{_bindir} OPENBLAS_CMAKE_DIR=%{buildroot}%{_libdir}/cmake install
 
-# Move include files to package specific directory, so that they don't clash with reference BLAS and LAPACK
-mkdir %{buildroot}%{_includedir}/%{name}
-mv %{buildroot}%{_includedir}/*.h %{buildroot}%{_includedir}/%{name}
-
 # Copy lapacke include files
 %if %{lapacke}
 cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 %endif
-
-# Put libraries in correct location
-if [ %_lib != lib ]; then
- mkdir -p %{buildroot}%{_libdir}
- mv %{buildroot}/usr/lib/libopen* %{buildroot}%{_libdir}
-fi
 
 # Fix name of static library
 slibname=`basename %{buildroot}%{_libdir}/libopenblas-*.so .so`
