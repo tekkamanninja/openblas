@@ -349,7 +349,7 @@ for lib in %{buildroot}%{_libdir}/libopenblas{,o,p}-*.so; do
 done
 
 # Get rid of generated CMake config
-rm -rf %{buildroot}%{_usr}/cmake
+rm -rf %{buildroot}%{_libdir}/cmake
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
