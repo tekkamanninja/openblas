@@ -270,7 +270,7 @@ make -C openmp64   TARGET=CORE2 DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=1 FC=gfor
 %install
 rm -rf %{buildroot}
 # Install serial library and headers
-make -C serial USE_THREAD=0 PREFIX=%{buildroot}%{_usr} install
+make -C serial USE_THREAD=0 OPENBLAS_LIBRARY_DIR=%{buildroot}%{_libdir} OPENBLAS_INCLUDE_DIR=%{buildroot}%{_includedir}/%name OPENBLAS_BINARY_DIR=%{buildroot}%{_bindir} OPENBLAS_CMAKE_DIR=%{buildroot}%{_libdir}/cmake install
 
 # Move include files to package specific directory, so that they don't clash with reference BLAS and LAPACK
 mkdir %{buildroot}%{_includedir}/%{name}
