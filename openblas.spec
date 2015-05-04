@@ -1,6 +1,6 @@
 Name:           openblas
 Version:        0.2.14
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -350,6 +350,17 @@ rm -rf %{buildroot}%{_libdir}/cmake
 %post threads -p /sbin/ldconfig
 %postun threads -p /sbin/ldconfig
 
+%if %build64
+%post openmp64 -p /sbin/ldconfig
+%postun openmp64 -p /sbin/ldconfig
+
+%post serial64 -p /sbin/ldconfig
+%postun serial64 -p /sbin/ldconfig
+
+%post threads64 -p /sbin/ldconfig
+%postun threads64 -p /sbin/ldconfig
+%endif
+
 %clean
 rm -rf %{buildroot}
 
@@ -410,6 +421,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sun May  3 2015 Peter Robinson <pbrobinson@fedoraproject.org> 0.2.14-2
+- Run ldconfig on 64 builds too
+
 * Wed Mar 25 2015 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.14-1
 - Update to 0.2.14.
 
