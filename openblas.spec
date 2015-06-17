@@ -1,6 +1,6 @@
 Name:           openblas
 Version:        0.2.14
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -421,6 +421,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Jun 17 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.2.14-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
+
 * Sun May  3 2015 Peter Robinson <pbrobinson@fedoraproject.org> 0.2.14-2
 - Run ldconfig on 64 builds too
 
