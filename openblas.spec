@@ -1,6 +1,6 @@
 Name:           openblas
 Version:        0.2.14
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -16,7 +16,7 @@ BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:  gcc-gfortran
 # For execstack
-BuildRequires:  prelink
+BuildRequires:  /usr/bin/execstack
 # LAPACK
 %if 0%{?rhel} == 5 || 0%{?rhel} == 6
 BuildRequires:  lapack-devel%{?_isa}
@@ -421,6 +421,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Aug 04 2015 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 0.2.14-4
+- Use new execstack (#1247795)
+
 * Wed Jun 17 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.2.14-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
 
