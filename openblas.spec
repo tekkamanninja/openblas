@@ -7,7 +7,7 @@ License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
 Source0:        https://github.com/xianyi/OpenBLAS/archive/v%{version}.tar.gz
 # Use system lapack
-Patch0:         openblas-0.2.11-system_lapack.patch
+Patch0:         openblas-0.2.15-system_lapack.patch
 # Drop extra p from threaded library name
 Patch1:         openblas-0.2.5-libname.patch
 # Don't test link against functions in lapacke 3.5.0 if only 3.4.0 is available

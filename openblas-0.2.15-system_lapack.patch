@@ -1,7 +1,19 @@
-diff -up OpenBLAS-0.2.11/Makefile.system_lapack OpenBLAS-0.2.11/Makefile
---- OpenBLAS-0.2.11/Makefile.system_lapack	2014-08-17 20:16:14.000000000 -0700
-+++ OpenBLAS-0.2.11/Makefile	2014-08-23 21:02:54.004245912 -0700
-@@ -209,57 +209,8 @@ hpl_p :
+diff -up OpenBLAS-0.2.15/Makefile.system_lapack OpenBLAS-0.2.15/Makefile
+--- OpenBLAS-0.2.15/Makefile.system_lapack	2015-10-28 08:36:08.234073535 -0700
++++ OpenBLAS-0.2.15/Makefile	2015-10-28 08:38:10.847518880 -0700
+@@ -16,11 +16,6 @@ BLASDIRS += reference
+ endif
+ 
+ SUBDIRS	= $(BLASDIRS)
+-ifneq ($(NO_LAPACK), 1)
+-SUBDIRS	+= lapack
+-endif
+-
+-LAPACK_NOOPT := $(filter-out -O0 -O1 -O2 -O3 -Ofast,$(LAPACK_FFLAGS))
+ 
+ SUBDIRS_ALL = $(SUBDIRS) test ctest utest exports benchmark ../laswp ../bench
+ 
+@@ -211,57 +206,8 @@ hpl_p :
  	fi; \
  	done
  
@@ -27,7 +39,7 @@ diff -up OpenBLAS-0.2.11/Makefile.system_lapack OpenBLAS-0.2.11/Makefile
 -	-@echo "FORTRAN     = $(FC)" > $(NETLIB_LAPACK_DIR)/make.inc
 -	-@echo "OPTS        = $(LAPACK_FFLAGS)" >> $(NETLIB_LAPACK_DIR)/make.inc
 -	-@echo "POPTS       = $(LAPACK_FPFLAGS)" >> $(NETLIB_LAPACK_DIR)/make.inc
--	-@echo "NOOPT       = $(LAPACK_FFLAGS) -O0" >> $(NETLIB_LAPACK_DIR)/make.inc
+-	-@echo "NOOPT       = -O0 $(LAPACK_NOOPT)" >> $(NETLIB_LAPACK_DIR)/make.inc
 -	-@echo "PNOOPT      = $(LAPACK_FPFLAGS) -O0" >> $(NETLIB_LAPACK_DIR)/make.inc
 -	-@echo "LOADOPTS    = $(FFLAGS) $(EXTRALIB)" >> $(NETLIB_LAPACK_DIR)/make.inc
 -	-@echo "CC          = $(CC)" >> $(NETLIB_LAPACK_DIR)/make.inc
@@ -60,9 +72,9 @@ diff -up OpenBLAS-0.2.11/Makefile.system_lapack OpenBLAS-0.2.11/Makefile
  
  large.tgz :
  ifndef NOFORTRAN
-diff -up OpenBLAS-0.2.11/Makefile.system.system_lapack OpenBLAS-0.2.11/Makefile.system
---- OpenBLAS-0.2.11/Makefile.system.system_lapack	2014-08-17 20:16:14.000000000 -0700
-+++ OpenBLAS-0.2.11/Makefile.system	2014-08-23 21:02:37.723976242 -0700
+diff -up OpenBLAS-0.2.15/Makefile.system.system_lapack OpenBLAS-0.2.15/Makefile.system
+--- OpenBLAS-0.2.15/Makefile.system.system_lapack	2015-10-27 13:44:50.000000000 -0700
++++ OpenBLAS-0.2.15/Makefile.system	2015-10-28 08:36:08.234073535 -0700
 @@ -9,7 +9,7 @@ ifndef TOPDIR
  TOPDIR = .
  endif
