@@ -1,6 +1,6 @@
 Name:           openblas
-Version:        0.2.14
-Release:        4%{?dist}
+Version:        0.2.15
+Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -421,6 +421,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Oct 28 2015 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.15-1
+- Update to 0.2.15.
+
 * Tue Aug 04 2015 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 0.2.14-4
 - Use new execstack (#1247795)
 
