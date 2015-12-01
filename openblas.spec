@@ -1,6 +1,6 @@
 Name:           openblas
 Version:        0.2.15
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -58,7 +58,7 @@ BuildRequires:  lapack64-static
 
 # Upstream supports the package only on these architectures.
 # Runtime processor detection is not available on other archs.
-ExclusiveArch:  x86_64 %{ix86}
+ExclusiveArch:  x86_64 %{ix86} armv7hl
 
 %global base_description \
 OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD \
@@ -421,6 +421,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Dec 01 2015 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.15-2
+- Enable armv7hl architecture.
+
 * Wed Oct 28 2015 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.15-1
 - Update to 0.2.15.
 
