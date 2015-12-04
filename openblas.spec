@@ -58,7 +58,7 @@ BuildRequires:  lapack64-static
 
 # Upstream supports the package only on these architectures.
 # Runtime processor detection is not available on other archs.
-ExclusiveArch:  x86_64 %{ix86} armv7hl
+ExclusiveArch:  x86_64 %{ix86} armv7hl ppc64le
 
 %global base_description \
 OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD \
@@ -117,6 +117,36 @@ Group:          Development/Libraries
 
 This package contains the library compiled with threading support and
 64-bit interface.
+
+%package serial64_
+Summary:        An optimized BLAS library based on GotoBLAS2, serial version
+Group:          Development/Libraries
+
+%description serial64_
+%{base_description}
+
+This package contains the sequential library compiled with a 64-bit
+interface and a symbol name suffix.
+
+%package openmp64_
+Summary:        An optimized BLAS library based on GotoBLAS2, OpenMP version
+Group:          Development/Libraries
+
+%description openmp64_
+%{base_description}
+
+This package contains the library compiled with OpenMP support and
+64-bit interface and a symbol name suffix.
+
+%package threads64_
+Summary:        An optimized BLAS library based on GotoBLAS2, pthreads version
+Group:          Development/Libraries
+
+%description threads64_
+%{base_description}
+
+This package contains the library compiled with threading support and
+64-bit interface and a symbol name suffix.
 %endif
 
 
@@ -130,6 +160,9 @@ Requires:       %{name}-threads%{?_isa} = %{version}-%{release}
 Requires:       %{name}-openmp64%{?_isa} = %{version}-%{release}
 Requires:       %{name}-threads64%{?_isa} = %{version}-%{release}
 Requires:       %{name}-serial64%{?_isa} = %{version}-%{release}
+Requires:       %{name}-openmp64_%{?_isa} = %{version}-%{release}
+Requires:       %{name}-threads64_%{?_isa} = %{version}-%{release}
+Requires:       %{name}-serial64_%{?_isa} = %{version}-%{release}
 %endif
 
 %description devel
@@ -167,9 +200,9 @@ cd ..
 cp -ar OpenBLAS-%{version} openmp
 cp -ar OpenBLAS-%{version} threaded
 %if %build64
-cp -ar OpenBLAS-%{version} openmp64
-cp -ar OpenBLAS-%{version} threaded64
-cp -ar OpenBLAS-%{version} serial64
+for d in {serial,threaded,openmp}64{,_}; do
+    cp -ar OpenBLAS-%{version} $d
+done
 %endif
 mv OpenBLAS-%{version} serial
 
@@ -240,7 +273,7 @@ cp -a %{_includedir}/lapacke .
 cd ..
 
 # Copy in place
-for d in serial64 threaded64 openmp64; do
+for d in {serial,threaded,openmp}64{,_}; do
     cp -pr netliblapack64 $d/netliblapack
 done
 rm -rf netliblapack64
@@ -272,6 +305,10 @@ make -C openmp     $TARGET DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=1 FC=gfortran 
 make -C serial64   $TARGET DYNAMIC_ARCH=1 USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblas64"  %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=1
 make -C threaded64 $TARGET DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblasp64" %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=1
 make -C openmp64   $TARGET DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblaso64" %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=1
+
+make -C serial64_   $TARGET DYNAMIC_ARCH=1 USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblas64"  %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
+make -C threaded64_ $TARGET DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblasp64" %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
+make -C openmp64_   $TARGET DYNAMIC_ARCH=1 USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblaso64" %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
 %endif
 
 %install
@@ -303,14 +340,20 @@ install -D -p -m 644 threaded/${plibname}.a %{buildroot}%{_libdir}/lib%{name}p.a
 slibname64=`echo ${slibname} | sed "s|lib%{name}|lib%{name}64|g"`
 install -D -p -m 755 serial64/${slibname64}.so %{buildroot}%{_libdir}/${slibname64}.so
 install -D -p -m 644 serial64/${slibname64}.a %{buildroot}%{_libdir}/lib%{name}64.a
+install -D -p -m 755 serial64_/${slibname64}.so %{buildroot}%{_libdir}/${slibname64}_.so
+install -D -p -m 644 serial64_/${slibname64}.a %{buildroot}%{_libdir}/lib%{name}64_.a
 
 olibname64=`echo ${slibname} | sed "s|lib%{name}|lib%{name}o64|g"`
 install -D -p -m 755 openmp64/${olibname64}.so %{buildroot}%{_libdir}/${olibname64}.so
 install -D -p -m 644 openmp64/${olibname64}.a %{buildroot}%{_libdir}/lib%{name}o64.a
+install -D -p -m 755 openmp64_/${olibname64}.so %{buildroot}%{_libdir}/${olibname64}_.so
+install -D -p -m 644 openmp64_/${olibname64}.a %{buildroot}%{_libdir}/lib%{name}o64_.a
 
 plibname64=`echo ${slibname} | sed "s|lib%{name}|lib%{name}p64|g"`
 install -D -p -m 755 threaded64/${plibname64}.so %{buildroot}%{_libdir}/${plibname64}.so
 install -D -p -m 644 threaded64/${plibname64}.a %{buildroot}%{_libdir}/lib%{name}p64.a
+install -D -p -m 755 threaded64_/${plibname64}.so %{buildroot}%{_libdir}/${plibname64}_.so
+install -D -p -m 644 threaded64_/${plibname64}.a %{buildroot}%{_libdir}/lib%{name}p64_.a
 %endif
 
 # Fix source permissions (also applies to LAPACK)
@@ -429,7 +472,9 @@ rm -rf %{buildroot}
 
 %changelog
 * Tue Dec 01 2015 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.15-2
-- Enable armv7hl architecture.
+- Enable armv7hl and ppc64le architectures.
+- Build versions of the 64-bit libraries with an additional suffix
+  (BZ #1287541).
 
 * Wed Oct 28 2015 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.15-1
 - Update to 0.2.15.
