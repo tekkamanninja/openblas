@@ -325,6 +325,7 @@ cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 %endif
 
 # Fix name of static library
+ls %{buildroot}%{_libdir}
 slibname=`basename %{buildroot}%{_libdir}/libopenblas-*.so .so`
 mv %{buildroot}%{_libdir}/${slibname}.a %{buildroot}%{_libdir}/lib%{name}.a
 
