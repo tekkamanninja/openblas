@@ -325,11 +325,10 @@ cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 %endif
 
 # Fix name of static library
-ls -lh %{buildroot}%{_libdir}
-for f in %{buildroot}%{_libdir}/*; do
- file $f
-done
-slibname=`basename %{buildroot}%{_libdir}/libopenblas-*.so .so`
+%ifarch armv7hl
+suffix="_armv7"
+%endif
+slibname=`basename %{buildroot}%{_libdir}/libopenblas${suffix}-*.so .so`
 mv %{buildroot}%{_libdir}/${slibname}.a %{buildroot}%{_libdir}/lib%{name}.a
 
 # Install the OpenMP library
