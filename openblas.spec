@@ -387,13 +387,13 @@ install -D -p -m 644 openmp64_/${olibname64_}.a %{buildroot}%{_libdir}/lib%{name
 
 if [[ "$suffix" != "" ]]; then
    oname64=$(echo ${olibname64} | sed "s|$suffix||g")
-   oname64=$(echo ${olibname64_} | sed "s|$suffix||g")
+   oname64_=$(echo ${olibname64_} | sed "s|$suffix||g")
 else
    oname64=${olibname64}
-   oname64=${olibname64_}
+   oname64_=${olibname64_}
 fi
 install -D -p -m 755 openmp64/${olibname64}.so %{buildroot}%{_libdir}/${oname64}.so
-install -D -p -m 755 openmp64_/${olibname64_}.so %{buildroot}%{_libdir}/${oname64}_.so
+install -D -p -m 755 openmp64_/${olibname64_}.so %{buildroot}%{_libdir}/${oname64_}.so
 
 plibname64=`echo ${slibname} | sed "s|lib%{name}|lib%{name}p64|g"`
 install -D -p -m 644 threaded64/${plibname64}.a %{buildroot}%{_libdir}/lib%{name}p64.a
@@ -408,7 +408,7 @@ else
    pname64_=${plibname64_}
 fi
 install -D -p -m 755 threaded64/${plibname64}.so %{buildroot}%{_libdir}/${pname64}.so
-install -D -p -m 755 threaded64_/${plibname64_}.so %{buildroot}%{_libdir}/${pname64}_.so
+install -D -p -m 755 threaded64_/${plibname64_}.so %{buildroot}%{_libdir}/${pname64_}.so
 %endif
 
 # Fix symlinks
@@ -427,18 +427,18 @@ ln -sf ${pname}.so lib%{name}p.so.0
 # Serial libraries
 ln -sf ${sname64}.so lib%{name}64.so
 ln -sf ${sname64}.so lib%{name}64.so.0
-ln -sf ${sname64}_.so lib%{name}64_.so
-ln -sf ${sname64}_.so lib%{name}64_.so.0
+ln -sf ${sname64_}.so lib%{name}64_.so
+ln -sf ${sname64_}.so lib%{name}64_.so.0
 # OpenMP libraries
 ln -sf ${oname64}.so lib%{name}o64.so
 ln -sf ${oname64}.so lib%{name}o64.so.0
-ln -sf ${oname64}_.so lib%{name}o64_.so
-ln -sf ${oname64}_.so lib%{name}o64_.so.0
+ln -sf ${oname64_}.so lib%{name}o64_.so
+ln -sf ${oname64_}.so lib%{name}o64_.so.0
 # Threaded libraries
 ln -sf ${pname64}.so lib%{name}p64.o
 ln -sf ${pname64}.so lib%{name}p64.so.0
-ln -sf ${pname64}_.so lib%{name}p64_.o
-ln -sf ${pname64}_.so lib%{name}p64_.so.0
+ln -sf ${pname64_}.so lib%{name}p64_.o
+ln -sf ${pname64_}.so lib%{name}p64_.so.0
 %endif
 
 # Get rid of executable stacks
