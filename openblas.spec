@@ -192,6 +192,9 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .lapacke
 %endif
 
+# Fix source permissions
+find -name \*.f -exec chmod 644 {} \;
+
 # Get rid of bundled LAPACK sources
 rm -rf lapack-netlib
 
@@ -324,73 +327,110 @@ make -C serial USE_THREAD=0 PREFIX=%{buildroot} OPENBLAS_LIBRARY_DIR=%{buildroot
 cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 %endif
 
-# Fix name of static library
+# Fix name of libraries
 %ifarch armv7hl
 suffix="_armv7"
 %endif
 slibname=`basename %{buildroot}%{_libdir}/libopenblas${suffix}-*.so .so`
 mv %{buildroot}%{_libdir}/${slibname}.a %{buildroot}%{_libdir}/lib%{name}.a
+if [[ "$suffix" != "" ]]; then
+   sname=$(echo $slibname | sed "s|$suffix||g")
+   mv %{buildroot}%{_libdir}/${slibname}.so %{buildroot}%{_libdir}/${sname}.so
+else
+   sname=${slibname}
+fi
 
 # Install the OpenMP library
 olibname=`echo ${slibname} | sed "s|lib%{name}|lib%{name}o|g"`
-install -D -p -m 755 openmp/${olibname}.so %{buildroot}%{_libdir}/${olibname}.so
 install -D -p -m 644 openmp/${olibname}.a %{buildroot}%{_libdir}/lib%{name}o.a
+if [[ "$suffix" != "" ]]; then
+   oname=$(echo $olibname | sed "s|$suffix||g")
+else	
+   oname=${olibname}
+fi
+install -D -p -m 755 openmp/${olibname}.so %{buildroot}%{_libdir}/${oname}.so
 
 # Install the threaded library
 plibname=`echo ${slibname} | sed "s|lib%{name}|lib%{name}p|g"`
-install -D -p -m 755 threaded/${plibname}.so %{buildroot}%{_libdir}/${plibname}.so
 install -D -p -m 644 threaded/${plibname}.a %{buildroot}%{_libdir}/lib%{name}p.a
+if [[ "$suffix" != "" ]]; then
+   pname=$(echo $plibname | sed "s|$suffix||g")
+else
+   pname=${plibname}
+fi
+install -D -p -m 755 openmp/${plibname}.so %{buildroot}%{_libdir}/${pname}.so
 
 # Install the 64-bit interface libraries
 %if %build64
 slibname64=`echo ${slibname} | sed "s|lib%{name}|lib%{name}64|g"`
-install -D -p -m 755 serial64/${slibname64}.so %{buildroot}%{_libdir}/${slibname64}.so
 install -D -p -m 644 serial64/${slibname64}.a %{buildroot}%{_libdir}/lib%{name}64.a
-install -D -p -m 755 serial64_/${slibname64}.so %{buildroot}%{_libdir}/${slibname64}_.so
-install -D -p -m 644 serial64_/${slibname64}.a %{buildroot}%{_libdir}/lib%{name}64_.a
+install -D -p -m 644 serial64_/${slibname64}_.a %{buildroot}%{_libdir}/lib%{name}64_.a
+
+if [[ "$suffix" != "" ]]; then
+   sname64=$(echo $slibname64 | sed "s|$suffix||g")
+else
+   sname64=${slibname64}
+fi
+install -D -p -m 755 serial64/${slibname64}.so %{buildroot}%{_libdir}/${sname64}.so
+install -D -p -m 755 serial64_/${slibname64}_.so %{buildroot}%{_libdir}/${sname64}_.so
 
 olibname64=`echo ${slibname} | sed "s|lib%{name}|lib%{name}o64|g"`
-install -D -p -m 755 openmp64/${olibname64}.so %{buildroot}%{_libdir}/${olibname64}.so
 install -D -p -m 644 openmp64/${olibname64}.a %{buildroot}%{_libdir}/lib%{name}o64.a
-install -D -p -m 755 openmp64_/${olibname64}.so %{buildroot}%{_libdir}/${olibname64}_.so
-install -D -p -m 644 openmp64_/${olibname64}.a %{buildroot}%{_libdir}/lib%{name}o64_.a
+install -D -p -m 644 openmp64_/${olibname64}_.a %{buildroot}%{_libdir}/lib%{name}o64_.a
+
+if [[ "$suffix" != "" ]]; then
+   oname64=$(echo $olibname64 | sed "s|$suffix||g")
+else
+   oname64=${olibname64}
+fi
+install -D -p -m 755 openmp64/${olibname64}.so %{buildroot}%{_libdir}/${oname64}.so
+install -D -p -m 755 openmp64_/${olibname64}_.so %{buildroot}%{_libdir}/${oname64}_.so
 
 plibname64=`echo ${slibname} | sed "s|lib%{name}|lib%{name}p64|g"`
-install -D -p -m 755 threaded64/${plibname64}.so %{buildroot}%{_libdir}/${plibname64}.so
 install -D -p -m 644 threaded64/${plibname64}.a %{buildroot}%{_libdir}/lib%{name}p64.a
-install -D -p -m 755 threaded64_/${plibname64}.so %{buildroot}%{_libdir}/${plibname64}_.so
-install -D -p -m 644 threaded64_/${plibname64}.a %{buildroot}%{_libdir}/lib%{name}p64_.a
-%endif
+install -D -p -m 644 threaded64_/${plibname64}_.a %{buildroot}%{_libdir}/lib%{name}p64_.a
 
-# Fix source permissions (also applies to LAPACK)
-find -name \*.f -exec chmod 644 {} \;
+if [[ "$suffix" != "" ]]; then
+   pname64=$(echo $plibname64 | sed "s|$suffix||g")
+else
+   pname64=${plibname64}
+fi
+install -D -p -m 755 threaded64/${plibname64}.so %{buildroot}%{_libdir}/${pname64}.so
+install -D -p -m 755 threaded64_/${plibname64}_.so %{buildroot}%{_libdir}/${pname64}_.so
+%endif
 
 # Fix symlinks
 pushd %{buildroot}%{_libdir}
 # Serial libraries
-ln -sf ${slibname}.so lib%{name}.so
-ln -sf ${slibname}.so lib%{name}.so.0
+ln -sf ${sname}.so lib%{name}.so
+ln -sf ${sname}.so lib%{name}.so.0
 # OpenMP libraries
-ln -sf ${olibname}.so lib%{name}o.so
-ln -sf ${olibname}.so lib%{name}o.so.0
+ln -sf ${oname}.so lib%{name}o.so
+ln -sf ${oname}.so lib%{name}o.so.0
 # Threaded libraries
-ln -sf ${plibname}.so lib%{name}p.so
-ln -sf ${plibname}.so lib%{name}p.so.0
+ln -sf ${pname}.so lib%{name}p.so
+ln -sf ${pname}.so lib%{name}p.so.0
 
 %if %build64
 # Serial libraries
-ln -sf ${slibname64}.so lib%{name}64.so
-ln -sf ${slibname64}.so lib%{name}64.so.0
+ln -sf ${sname64}.so lib%{name}64.so
+ln -sf ${sname64}.so lib%{name}64.so.0
+ln -sf ${sname64}_.so lib%{name}64_.so
+ln -sf ${sname64}_.so lib%{name}64_.so.0
 # OpenMP libraries
-ln -sf ${olibname64}.so lib%{name}o64.so
-ln -sf ${olibname64}.so lib%{name}o64.so.0
+ln -sf ${oname64}.so lib%{name}o64.so
+ln -sf ${oname64}.so lib%{name}o64.so.0
+ln -sf ${oname64}_.so lib%{name}o64_.so
+ln -sf ${oname64}_.so lib%{name}o64_.so.0
 # Threaded libraries
-ln -sf ${plibname64}.so lib%{name}p64.so
-ln -sf ${plibname64}.so lib%{name}p64.so.0
+ln -sf ${pname64}.so lib%{name}p64.o
+ln -sf ${pname64}.so lib%{name}p64.so.0
+ln -sf ${pname64}_.so lib%{name}p64_.o
+ln -sf ${pname64}_.so lib%{name}p64_.so.0
 %endif
 
 # Get rid of executable stacks
-for lib in %{buildroot}%{_libdir}/libopenblas{,o,p}-*.so; do
+for lib in %{buildroot}%{_libdir}/libopenblas*.so; do
  execstack -c $lib
 done
 
@@ -409,12 +449,18 @@ rm -rf %{buildroot}%{_libdir}/cmake
 %if %build64
 %post openmp64 -p /sbin/ldconfig
 %postun openmp64 -p /sbin/ldconfig
+%post openmp64_ -p /sbin/ldconfig
+%postun openmp64_ -p /sbin/ldconfig
 
 %post serial64 -p /sbin/ldconfig
 %postun serial64 -p /sbin/ldconfig
+%post serial64_ -p /sbin/ldconfig
+%postun serial64_ -p /sbin/ldconfig
 
 %post threads64 -p /sbin/ldconfig
 %postun threads64 -p /sbin/ldconfig
+%post threads64_ -p /sbin/ldconfig
+%postun threads64_ -p /sbin/ldconfig
 %endif
 
 %clean
@@ -451,6 +497,21 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 %{_libdir}/lib%{name}p64-*.so
 %{_libdir}/lib%{name}p64.so.*
+
+%files serial64_
+%defattr(-,root,root,-)
+%{_libdir}/lib%{name}64_-*.so
+%{_libdir}/lib%{name}64_.so.*
+
+%files openmp64_
+%defattr(-,root,root,-)
+%{_libdir}/lib%{name}o64_-*.so
+%{_libdir}/lib%{name}o64_.so.*
+
+%files threads64_
+%defattr(-,root,root,-)
+%{_libdir}/lib%{name}p64_-*.so
+%{_libdir}/lib%{name}p64_.so.*
 %endif
 
 %files devel
@@ -474,6 +535,9 @@ rm -rf %{buildroot}
 %{_libdir}/lib%{name}64.a
 %{_libdir}/lib%{name}o64.a
 %{_libdir}/lib%{name}p64.a
+%{_libdir}/lib%{name}64_.a
+%{_libdir}/lib%{name}o64_.a
+%{_libdir}/lib%{name}p64_.a
 %endif
 
 %changelog
