@@ -331,6 +331,9 @@ cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 %ifarch armv7hl
 suffix="_armv7"
 %endif
+%ifarch ppc64le
+suffix="_power6"
+%endif
 slibname=`basename %{buildroot}%{_libdir}/libopenblas${suffix}-*.so .so`
 mv %{buildroot}%{_libdir}/${slibname}.a %{buildroot}%{_libdir}/lib%{name}.a
 if [[ "$suffix" != "" ]]; then
