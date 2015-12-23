@@ -367,39 +367,48 @@ install -D -p -m 755 threaded/${plibname}.so %{buildroot}%{_libdir}/${pname}.so
 %if %build64
 slibname64=`echo ${slibname} | sed "s|lib%{name}|lib%{name}64|g"`
 install -D -p -m 644 serial64/${slibname64}.a %{buildroot}%{_libdir}/lib%{name}64.a
-install -D -p -m 644 serial64_/${slibname64}_.a %{buildroot}%{_libdir}/lib%{name}64_.a
+slibname64_=`echo ${slibname} | sed "s|lib%{name}|lib%{name}64_|g"`
+install -D -p -m 644 serial64_/${slibname64_}.a %{buildroot}%{_libdir}/lib%{name}64_.a
 
 if [[ "$suffix" != "" ]]; then
-   sname64=$(echo $slibname64 | sed "s|$suffix||g")
+   sname64=$(echo ${slibname64} | sed "s|$suffix||g")
+   sname64_=$(echo ${slibname64_} | sed "s|$suffix||g")
 else
    sname64=${slibname64}
+   sname64_=${slibname64_}
 fi
 install -D -p -m 755 serial64/${slibname64}.so %{buildroot}%{_libdir}/${sname64}.so
-install -D -p -m 755 serial64_/${slibname64}_.so %{buildroot}%{_libdir}/${sname64}_.so
+install -D -p -m 755 serial64_/${slibname64_}.so %{buildroot}%{_libdir}/${sname64_}.so
 
 olibname64=`echo ${slibname} | sed "s|lib%{name}|lib%{name}o64|g"`
 install -D -p -m 644 openmp64/${olibname64}.a %{buildroot}%{_libdir}/lib%{name}o64.a
-install -D -p -m 644 openmp64_/${olibname64}_.a %{buildroot}%{_libdir}/lib%{name}o64_.a
+olibname64_=`echo ${slibname} | sed "s|lib%{name}|lib%{name}o64_|g"`
+install -D -p -m 644 openmp64_/${olibname64_}.a %{buildroot}%{_libdir}/lib%{name}o64_.a
 
 if [[ "$suffix" != "" ]]; then
-   oname64=$(echo $olibname64 | sed "s|$suffix||g")
+   oname64=$(echo ${olibname64} | sed "s|$suffix||g")
+   oname64=$(echo ${olibname64_} | sed "s|$suffix||g")
 else
    oname64=${olibname64}
+   oname64=${olibname64_}
 fi
 install -D -p -m 755 openmp64/${olibname64}.so %{buildroot}%{_libdir}/${oname64}.so
-install -D -p -m 755 openmp64_/${olibname64}_.so %{buildroot}%{_libdir}/${oname64}_.so
+install -D -p -m 755 openmp64_/${olibname64_}.so %{buildroot}%{_libdir}/${oname64}_.so
 
 plibname64=`echo ${slibname} | sed "s|lib%{name}|lib%{name}p64|g"`
 install -D -p -m 644 threaded64/${plibname64}.a %{buildroot}%{_libdir}/lib%{name}p64.a
-install -D -p -m 644 threaded64_/${plibname64}_.a %{buildroot}%{_libdir}/lib%{name}p64_.a
+plibname64_=`echo ${slibname} | sed "s|lib%{name}|lib%{name}p64_|g"`
+install -D -p -m 644 threaded64_/${plibname64_}.a %{buildroot}%{_libdir}/lib%{name}p64_.a
 
 if [[ "$suffix" != "" ]]; then
    pname64=$(echo $plibname64 | sed "s|$suffix||g")
+   pname64_=$(echo $plibname64_ | sed "s|$suffix||g")
 else
    pname64=${plibname64}
+   pname64_=${plibname64_}
 fi
 install -D -p -m 755 threaded64/${plibname64}.so %{buildroot}%{_libdir}/${pname64}.so
-install -D -p -m 755 threaded64_/${plibname64}_.so %{buildroot}%{_libdir}/${pname64}_.so
+install -D -p -m 755 threaded64_/${plibname64_}.so %{buildroot}%{_libdir}/${pname64}_.so
 %endif
 
 # Fix symlinks
