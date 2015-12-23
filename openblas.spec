@@ -536,6 +536,9 @@ rm -rf %{buildroot}
 %{_libdir}/lib%{name}64.so
 %{_libdir}/lib%{name}o64.so
 %{_libdir}/lib%{name}p64.so
+%{_libdir}/lib%{name}64_.so
+%{_libdir}/lib%{name}o64_.so
+%{_libdir}/lib%{name}p64_.so
 %endif
 
 %files static
