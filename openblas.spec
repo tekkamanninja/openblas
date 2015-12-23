@@ -24,15 +24,6 @@ BuildRequires:  lapack-devel%{?_isa}
 BuildRequires:  lapack-static%{?_isa}
 %endif
 
-# Compability for old versions of GCC
-%if 0%{?rhel} == 5
-%global avxflag NO_AVX=1
-%global avx2flag NO_AVX2=1
-%endif
-%if 0%{?rhel} == 6
-%global avx2flag NO_AVX2=1
-%endif
-
 # Do we have LAPACKE? (Needs at least lapack 3.4.0)
 %if 0%{?fedora} > 16
 %global lapacke 1
@@ -294,6 +285,15 @@ NMAX="NUM_THREADS=128"
 
 %ifarch %{ix86} x86_64
 TARGET="TARGET=CORE2 DYNAMIC_ARCH=1"
+
+# Compability for old versions of GCC
+%if 0%{?rhel} == 5
+export AVX="NO_AVX=1 NO_AVX2=1"
+%endif
+%if 0%{?rhel} == 6
+export AVX="NO_AVX2=1"
+%endif
+
 %endif
 %ifarch armv7hl
 TARGET="TARGET=ARMV7 DYNAMIC_ARCH=0"
@@ -302,19 +302,19 @@ TARGET="TARGET=ARMV7 DYNAMIC_ARCH=0"
 TARGET="TARGET=POWER8 DYNAMIC_ARCH=0"
 %endif
 
-make -C serial     $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblas"    %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=0
-make -C threaded   $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblasp"   %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=0
+make -C serial     $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblas"      $AVX $LAPACKE INTERFACE64=0
+make -C threaded   $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblasp"     $AVX $LAPACKE INTERFACE64=0
 # USE_THREAD determines use of SMP, not of pthreads
-make -C openmp     $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblaso"   %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=0
+make -C openmp     $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblaso"     $AVX $LAPACKE INTERFACE64=0
 
 %if %build64
-make -C serial64   $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblas64"  %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=1
-make -C threaded64 $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblasp64" %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=1
-make -C openmp64   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblaso64" %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=1
+make -C serial64   $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblas64"    $AVX $LAPACKE INTERFACE64=1
+make -C threaded64 $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblasp64"   $AVX $LAPACKE INTERFACE64=1
+make -C openmp64   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblaso64"   $AVX $LAPACKE INTERFACE64=1
 
-make -C serial64_   $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblas64"  %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
-make -C threaded64_ $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblasp64" %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
-make -C openmp64_   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblaso64" %{?avxflag} %{?avx2flag} $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
+make -C serial64_   $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblas64_"  $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
+make -C threaded64_ $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblasp64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
+make -C openmp64_   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" $NMAX LIBPREFIX="libopenblaso64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
 %endif
 
 %install
