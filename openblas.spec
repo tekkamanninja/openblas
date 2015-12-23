@@ -435,9 +435,9 @@ ln -sf ${oname64}.so lib%{name}o64.so.0
 ln -sf ${oname64_}.so lib%{name}o64_.so
 ln -sf ${oname64_}.so lib%{name}o64_.so.0
 # Threaded libraries
-ln -sf ${pname64}.so lib%{name}p64.o
+ln -sf ${pname64}.so lib%{name}p64.so
 ln -sf ${pname64}.so lib%{name}p64.so.0
-ln -sf ${pname64_}.so lib%{name}p64_.o
+ln -sf ${pname64_}.so lib%{name}p64_.so
 ln -sf ${pname64_}.so lib%{name}p64_.so.0
 %endif
 
