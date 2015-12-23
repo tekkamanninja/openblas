@@ -358,7 +358,7 @@ if [[ "$suffix" != "" ]]; then
 else
    pname=${plibname}
 fi
-install -D -p -m 755 openmp/${plibname}.so %{buildroot}%{_libdir}/${pname}.so
+install -D -p -m 755 threaded/${plibname}.so %{buildroot}%{_libdir}/${pname}.so
 
 # Install the 64-bit interface libraries
 %if %build64
