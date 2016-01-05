@@ -15,8 +15,10 @@ Patch2:         openblas-0.2.10-lapacke.patch
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:  gcc-gfortran
+%ifnarch ppc64le
 # For execstack
 BuildRequires:  /usr/bin/execstack
+%endif
 # LAPACK
 %if 0%{?rhel} == 5 || 0%{?rhel} == 6
 BuildRequires:  lapack-devel%{?_isa}
@@ -441,10 +443,12 @@ ln -sf ${pname64_}.so lib%{name}p64_.so
 ln -sf ${pname64_}.so lib%{name}p64_.so.0
 %endif
 
+%ifnarch ppc64le
 # Get rid of executable stacks
 for lib in %{buildroot}%{_libdir}/libopenblas*.so; do
  execstack -c $lib
 done
+%endif
 
 # Get rid of generated CMake config
 rm -rf %{buildroot}%{_libdir}/cmake
