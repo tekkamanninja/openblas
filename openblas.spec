@@ -488,55 +488,45 @@ rm -rf %{buildroot}%{_libdir}/cmake
 rm -rf %{buildroot}
 
 %files
-%defattr(-,root,root,-)
 %doc serial/Changelog.txt serial/GotoBLAS* serial/LICENSE
 %{_libdir}/lib%{name}-*.so
 %{_libdir}/lib%{name}.so.*
 
 %files openmp
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}o-*.so
 %{_libdir}/lib%{name}o.so.*
 
 %files threads
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}p-*.so
 %{_libdir}/lib%{name}p.so.*
 
 %if %build64
 %files serial64
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}64-*.so
 %{_libdir}/lib%{name}64.so.*
 
 %files openmp64
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}o64-*.so
 %{_libdir}/lib%{name}o64.so.*
 
 %files threads64
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}p64-*.so
 %{_libdir}/lib%{name}p64.so.*
 
 %files serial64_
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}64_-*.so
 %{_libdir}/lib%{name}64_.so.*
 
 %files openmp64_
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}o64_-*.so
 %{_libdir}/lib%{name}o64_.so.*
 
 %files threads64_
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}p64_-*.so
 %{_libdir}/lib%{name}p64_.so.*
 %endif
 
 %files devel
-%defattr(-,root,root,-)
 %{_includedir}/%{name}/
 %{_libdir}/lib%{name}.so
 %{_libdir}/lib%{name}o.so
@@ -551,7 +541,6 @@ rm -rf %{buildroot}
 %endif
 
 %files static
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}.a
 %{_libdir}/lib%{name}o.a
 %{_libdir}/lib%{name}p.a
