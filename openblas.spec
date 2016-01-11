@@ -1,6 +1,8 @@
+%bcond_with system_lapack
+
 Name:           openblas
 Version:        0.2.15
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -10,14 +12,13 @@ Source0:        https://github.com/xianyi/OpenBLAS/archive/v%{version}.tar.gz
 Patch0:         openblas-0.2.15-system_lapack.patch
 # Drop extra p from threaded library name
 Patch1:         openblas-0.2.5-libname.patch
-# Don't test link against functions in lapacke 3.5.0 if only 3.4.0 is available
-Patch2:         openblas-0.2.10-lapacke.patch
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:  gcc-gfortran
 # For execstack
 BuildRequires:  /usr/bin/execstack
 # LAPACK
+%if %{with system_lapack}
 %if 0%{?rhel} == 5 || 0%{?rhel} == 6
 BuildRequires:  lapack-devel%{?_isa}
 %else
@@ -25,10 +26,15 @@ BuildRequires:  lapack-static%{?_isa}
 %endif
 
 # Do we have LAPACKE? (Needs at least lapack 3.4.0)
-%if 0%{?fedora} > 16
+%if 0%{?fedora}
 %global lapacke 1
 %else
 %global lapacke 0
+%endif
+%else
+%global lapacke 1
+
+Provides:       bundled(lapack)
 %endif
 
 # Build 64-bit interface binaries?
@@ -43,8 +49,10 @@ BuildRequires:  lapack-static%{?_isa}
 %endif
 %endif
 
+%if %{with system_lapack}
 %if %build64
 BuildRequires:  lapack64-static
+%endif
 %endif
 
 # Upstream supports the package only on these architectures.
@@ -177,17 +185,18 @@ This package contains the static libraries.
 # Untar source
 tar zxf %{SOURCE0}
 cd OpenBLAS-%{version}
+%if %{with system_lapack}
 %patch0 -p1 -b .system_lapack
-%patch1 -p1 -b .libname
-%if 0%{?fedora} > 0 && 0%{?fedora} < 21
-%patch2 -p1 -b .lapacke
 %endif
+%patch1 -p1 -b .libname
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
 
+%if %{with system_lapack}
 # Get rid of bundled LAPACK sources
 rm -rf lapack-netlib
+%endif
 
 # Make serial, threaded and OpenMP versions; as well as 64-bit versions
 cd ..
@@ -200,6 +209,7 @@ done
 %endif
 mv OpenBLAS-%{version} serial
 
+%if %{with system_lapack}
 # Setup 32-bit interface LAPACK
 mkdir netliblapack
 cd netliblapack
@@ -272,11 +282,10 @@ for d in {serial,threaded,openmp}64{,_}; do
 done
 rm -rf netliblapack64
 %endif
+%endif
 
 %build
-%if %{lapacke}
-LAPACKE="NO_LAPACKE=0"
-%else
+%if !%{lapacke}
 LAPACKE="NO_LAPACKE=1"
 %endif
 
@@ -323,7 +332,7 @@ rm -rf %{buildroot}
 make -C serial USE_THREAD=0 PREFIX=%{buildroot} OPENBLAS_LIBRARY_DIR=%{buildroot}%{_libdir} OPENBLAS_INCLUDE_DIR=%{buildroot}%{_includedir}/%name OPENBLAS_BINARY_DIR=%{buildroot}%{_bindir} OPENBLAS_CMAKE_DIR=%{buildroot}%{_libdir}/cmake install
 
 # Copy lapacke include files
-%if %{lapacke}
+%if %{with system_lapack} && %{lapacke}
 cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 %endif
 
@@ -556,6 +565,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Jan 11 2016 Orion Poplawski <orion@cora.nwra.com> - 0.2.15-3
+- Allow conditional build with or without system lapack, default to without
+
 * Tue Dec 01 2015 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.15-2
 - Enable armv7hl and ppc64le architectures.
 - Build versions of the 64-bit libraries with an additional suffix
