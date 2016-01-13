@@ -1,22 +1,19 @@
-diff -up OpenBLAS-0.2.15/driver/others/memory.c.orig OpenBLAS-0.2.15/driver/others/memory.c
---- OpenBLAS-0.2.15/driver/others/memory.c.orig	2015-10-27 21:44:50.000000000 +0100
-+++ OpenBLAS-0.2.15/driver/others/memory.c	2016-01-12 20:22:14.935338309 +0100
-@@ -1338,7 +1338,7 @@ static void gotoblas_memory_init(void) {
+diff -up OpenBLAS-0.2.15/driver/others/memory.c.priority OpenBLAS-0.2.15/driver/others/memory.c
+--- OpenBLAS-0.2.15/driver/others/memory.c.priority	2015-10-27 21:44:50.000000000 +0100
++++ OpenBLAS-0.2.15/driver/others/memory.c	2016-01-13 21:12:01.862225898 +0100
+@@ -146,8 +146,15 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ #define CONSTRUCTOR	__attribute__ ((constructor))
+ #define DESTRUCTOR	__attribute__ ((destructor))
+ #else
++#if __GNUC__ && INIT_PRIORITY && ((GCC_VERSION >= 40300) || (CLANG_VERSION >= 20900))
+ #define CONSTRUCTOR	__attribute__ ((constructor(101)))
+ #define DESTRUCTOR	__attribute__ ((destructor(101)))
++#elif __GNUC__ && INIT_PRIORITY
++#define CONSTRUCTOR	__attribute__ ((constructor))
++#define DESTRUCTOR	__attribute__ ((destructor))
++#else
++#define CONSTRUCTOR
++#define DESTRUCTOR
+ #endif
  
- static int gotoblas_initialized = 0;
- 
--void CONSTRUCTOR gotoblas_init(void) {
-+void gotoblas_init(void) {
- 
-   if (gotoblas_initialized) return;
- 
-@@ -1381,7 +1381,7 @@ void CONSTRUCTOR gotoblas_init(void) {
- 
- }
- 
--void DESTRUCTOR gotoblas_quit(void) {
-+void gotoblas_quit(void) {
- 
-   if (gotoblas_initialized == 0) return;
- 
-diff -up OpenBLAS-0.2.15/getarch.c.orig OpenBLAS-0.2.15/getarch.c
+ #ifdef DYNAMIC_ARCH
