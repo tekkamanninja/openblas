@@ -332,19 +332,19 @@ TARGET="TARGET=POWER8 DYNAMIC_ARCH=0"
 %endif
 
 # Declare some necessary build flags
-make -C serial     $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblas"      $AVX $LAPACKE INTERFACE64=0
-make -C threaded   $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblasp"     $AVX $LAPACKE INTERFACE64=0
+make -C serial     $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblas"      $AVX $LAPACKE INTERFACE64=0
+make -C threaded   $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblasp"     $AVX $LAPACKE INTERFACE64=0
 # USE_THREAD determines use of SMP, not of pthreads
-make -C openmp     $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblaso"     $AVX $LAPACKE INTERFACE64=0
+make -C openmp     $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblaso"     $AVX $LAPACKE INTERFACE64=0
 
 %if %build64
-make -C serial64   $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblas64"    $AVX $LAPACKE INTERFACE64=1
-make -C threaded64 $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblasp64"   $AVX $LAPACKE INTERFACE64=1
-make -C openmp64   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblaso64"   $AVX $LAPACKE INTERFACE64=1
+make -C serial64   $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblas64"    $AVX $LAPACKE INTERFACE64=1
+make -C threaded64 $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblasp64"   $AVX $LAPACKE INTERFACE64=1
+make -C openmp64   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblaso64"   $AVX $LAPACKE INTERFACE64=1
 
-make -C serial64_   $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblas64_"  $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
-make -C threaded64_ $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblasp64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
-make -C openmp64_   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags}" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblaso64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
+make -C serial64_   $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblas64_"  $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
+make -C threaded64_ $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblasp64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
+make -C openmp64_   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblaso64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
 %endif
 
 %install
