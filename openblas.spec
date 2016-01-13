@@ -331,7 +331,7 @@ TARGET="TARGET=ARMV7 DYNAMIC_ARCH=0"
 TARGET="TARGET=POWER8 DYNAMIC_ARCH=0"
 %endif
 
-%if 0{%?rhel} == 5
+%if 0%{?rhel} == 5
 # Gfortran too old to recognize -frecursive
 FCOMMON=""
 %else
