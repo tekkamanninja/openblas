@@ -369,7 +369,7 @@ cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 suffix="_armv7"
 %endif
 %ifarch ppc64le
-suffix="_power6"
+suffix="_power8"
 %endif
 slibname=`basename %{buildroot}%{_libdir}/libopenblas${suffix}-*.so .so`
 mv %{buildroot}%{_libdir}/${slibname}.a %{buildroot}%{_libdir}/lib%{name}.a
@@ -595,6 +595,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Mar 16 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.16-2
+- Fix library suffix on ppc64le.
+
 * Tue Mar 15 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.16-1
 - Update to 0.2.16.
 
