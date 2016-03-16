@@ -333,9 +333,9 @@ TARGET="TARGET=POWER8 DYNAMIC_ARCH=0"
 
 %if 0%{?rhel} == 5
 # Gfortran too old to recognize -frecursive
-FCOMMON=""
+FCOMMON="\"-frecursive -fPIC\""
 %else
-FCOMMON="\"-frecursive\""
+FCOMMON="\"-frecursive -fPIC\""
 %endif
 
 # Declare some necessary build flags
