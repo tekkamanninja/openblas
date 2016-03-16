@@ -3,8 +3,8 @@
 %global lapackver 3.5.0
 
 Name:           openblas
-Version:        0.2.15
-Release:        5%{?dist}
+Version:        0.2.16
+Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -331,20 +331,27 @@ TARGET="TARGET=ARMV7 DYNAMIC_ARCH=0"
 TARGET="TARGET=POWER8 DYNAMIC_ARCH=0"
 %endif
 
+%if 0%{?rhel} == 5
+# Gfortran too old to recognize -frecursive
+FCOMMON=""
+%else
+FCOMMON="-frecursive"
+%endif
+
 # Declare some necessary build flags
-make -C serial     $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblas"      $AVX $LAPACKE INTERFACE64=0
-make -C threaded   $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblasp"     $AVX $LAPACKE INTERFACE64=0
+make -C serial     $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="$FCOMMON -fPIC" $NMAX LIBPREFIX="libopenblas"      $AVX $LAPACKE INTERFACE64=0
+make -C threaded   $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="$FCOMMON -fPIC" $NMAX LIBPREFIX="libopenblasp"     $AVX $LAPACKE INTERFACE64=0
 # USE_THREAD determines use of SMP, not of pthreads
-make -C openmp     $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblaso"     $AVX $LAPACKE INTERFACE64=0
+make -C openmp     $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="$FCOMMON -fPIC" $NMAX LIBPREFIX="libopenblaso"     $AVX $LAPACKE INTERFACE64=0
 
 %if %build64
-make -C serial64   $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblas64"    $AVX $LAPACKE INTERFACE64=1
-make -C threaded64 $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblasp64"   $AVX $LAPACKE INTERFACE64=1
-make -C openmp64   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblaso64"   $AVX $LAPACKE INTERFACE64=1
+make -C serial64   $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="$FCOMMON -fPIC" $NMAX LIBPREFIX="libopenblas64"    $AVX $LAPACKE INTERFACE64=1
+make -C threaded64 $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="$FCOMMON -fPIC" $NMAX LIBPREFIX="libopenblasp64"   $AVX $LAPACKE INTERFACE64=1
+make -C openmp64   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="$FCOMMON -fPIC" $NMAX LIBPREFIX="libopenblaso64"   $AVX $LAPACKE INTERFACE64=1
 
-make -C serial64_   $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblas64_"  $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
-make -C threaded64_ $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblasp64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
-make -C openmp64_   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="-frecursive" $NMAX LIBPREFIX="libopenblaso64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
+make -C serial64_   $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="$FCOMMON -fPIC" $NMAX LIBPREFIX="libopenblas64_"  $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
+make -C threaded64_ $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="$FCOMMON -fPIC" $NMAX LIBPREFIX="libopenblasp64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
+make -C openmp64_   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="$FCOMMON -fPIC" $NMAX LIBPREFIX="libopenblaso64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
 %endif
 
 %install
@@ -588,6 +595,12 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Mar 15 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.16-1
+- Update to 0.2.16.
+
+* Thu Feb 04 2016 Fedora Release Engineering <releng@fedoraproject.org> - 0.2.15-6
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
+
 * Tue Jan 12 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.15-5
 - Need to use -frecursive to make LAPACK thread safe.
 
