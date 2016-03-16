@@ -3,8 +3,8 @@
 %global lapackver 3.5.0
 
 Name:           openblas
-Version:        0.2.15
-Release:        5%{?dist}
+Version:        0.2.16
+Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -595,6 +595,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Mar 15 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.16-1
+- Update to 0.2.16.
+
 * Tue Jan 12 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.15-5
 - Need to use -frecursive to make LAPACK thread safe.
 
