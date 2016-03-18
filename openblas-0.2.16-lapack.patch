@@ -1,0 +1,12 @@
+diff -up OpenBLAS-0.2.16/Makefile.rule.lapack OpenBLAS-0.2.16/Makefile.rule
+--- OpenBLAS-0.2.16/Makefile.rule.lapack	2016-03-15 19:49:10.000000000 +0100
++++ OpenBLAS-0.2.16/Makefile.rule	2016-03-18 19:25:31.778098957 +0100
+@@ -80,7 +80,7 @@ VERSION = 0.2.16
+ # NO_LAPACKE = 1
+ 
+ # Build LAPACK Deprecated functions since LAPACK 3.6.0
+-# BUILD_LAPACK_DEPRECATED = 1
++BUILD_LAPACK_DEPRECATED = 1
+ 
+ # If you want to use legacy threaded Level 3 implementation.
+ # USE_SIMPLE_THREADED_LEVEL3 = 1
