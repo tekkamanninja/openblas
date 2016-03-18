@@ -4,7 +4,7 @@
 
 Name:           openblas
 Version:        0.2.16
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -14,8 +14,10 @@ Source0:        https://github.com/xianyi/OpenBLAS/archive/v%{version}.tar.gz
 Patch0:         openblas-0.2.15-system_lapack.patch
 # Drop extra p from threaded library name
 Patch1:         openblas-0.2.5-libname.patch
-# Don't use constructor priorities
+# Don't use constructor priorities on too old architectures
 Patch2:         openblas-0.2.15-constructor.patch
+# Build deprecated LAPACK functions
+Patch3:         openblas-0.2.16-lapack.patch
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:  gcc-gfortran
@@ -209,6 +211,7 @@ cd OpenBLAS-%{version}
 %if 0%{?rhel} == 5
 %patch2 -p1 -b .constructor
 %endif
+%patch3 -p1 -b .lapack
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -595,6 +598,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Mar 18 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.16-3
+- Include deprecated LAPACK functions.
+
 * Wed Mar 16 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.16-2
 - Fix library suffix on ppc64le.
 
