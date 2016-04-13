@@ -9,7 +9,7 @@ Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
-Source0:        https://github.com/xianyi/OpenBLAS/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        https://github.com/xianyi/OpenBLAS/archive/v%{version}.tar.gz
 # Use system lapack
 Patch0:         openblas-0.2.15-system_lapack.patch
 # Drop extra p from threaded library name
