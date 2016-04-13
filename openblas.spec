@@ -3,7 +3,7 @@
 %global lapackver 3.5.0
 
 Name:           openblas
-Version:        0.2.17
+Version:        0.2.18
 Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
@@ -595,6 +595,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Apr 12 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-1
+- Update to 0.2.18.
+
 * Wed Apr 6 2016 Orion Poplawski <orion@cora.nwra.com> - 0.2.17-1
 - Update to 0.2.17
 
