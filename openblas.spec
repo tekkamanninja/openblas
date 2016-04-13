@@ -3,8 +3,8 @@
 %global lapackver 3.5.0
 
 Name:           openblas
-Version:        0.2.16
-Release:        3%{?dist}
+Version:        0.2.18
+Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -16,8 +16,6 @@ Patch0:         openblas-0.2.15-system_lapack.patch
 Patch1:         openblas-0.2.5-libname.patch
 # Don't use constructor priorities on too old architectures
 Patch2:         openblas-0.2.15-constructor.patch
-# Build deprecated LAPACK functions
-Patch3:         openblas-0.2.16-lapack.patch
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:  gcc-gfortran
@@ -211,7 +209,6 @@ cd OpenBLAS-%{version}
 %if 0%{?rhel} == 5
 %patch2 -p1 -b .constructor
 %endif
-%patch3 -p1 -b .lapack
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -598,6 +595,12 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Apr 12 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-1
+- Update to 0.2.18.
+
+* Wed Apr 6 2016 Orion Poplawski <orion@cora.nwra.com> - 0.2.17-1
+- Update to 0.2.17
+
 * Fri Mar 18 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.16-3
 - Include deprecated LAPACK functions.
 
