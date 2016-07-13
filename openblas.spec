@@ -4,7 +4,7 @@
 
 Name:           openblas
 Version:        0.2.18
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
