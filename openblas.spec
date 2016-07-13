@@ -4,7 +4,7 @@
 
 Name:           openblas
 Version:        0.2.18
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -22,13 +22,17 @@ BuildRequires:  gcc-gfortran
 
 # Do we have execstack?
 %if 0%{?rhel} == 7
-%ifarch ppc64le
+%ifarch ppc64le aarch64
 %global execstack 0
 %else
 %global execstack 1
 %endif
 %else
+%ifarch aarch64
+%global execstack 0
+%else
 %global execstack 1
+%endif
 %endif
 %if %{execstack}
 BuildRequires:  /usr/bin/execstack
@@ -74,7 +78,7 @@ BuildRequires:  lapack64-static
 
 # Upstream supports the package only on these architectures.
 # Runtime processor detection is not available on other archs.
-ExclusiveArch:  x86_64 %{ix86} armv7hl ppc64le
+ExclusiveArch:  x86_64 %{ix86} armv7hl ppc64le aarch64
 
 %global base_description \
 OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD \
@@ -330,6 +334,9 @@ TARGET="TARGET=ARMV7 DYNAMIC_ARCH=0"
 %ifarch ppc64le
 TARGET="TARGET=POWER8 DYNAMIC_ARCH=0"
 %endif
+%ifarch aarch64
+TARGET="TARGET=ARMV8 DYNAMIC_ARCH=0"
+%endif
 
 %if 0%{?rhel} == 5
 # Gfortran too old to recognize -frecursive
@@ -370,6 +377,9 @@ suffix="_armv7"
 %endif
 %ifarch ppc64le
 suffix="_power8"
+%endif
+%ifarch aarch64
+suffix="_armv8"
 %endif
 slibname=`basename %{buildroot}%{_libdir}/libopenblas${suffix}-*.so .so`
 mv %{buildroot}%{_libdir}/${slibname}.a %{buildroot}%{_libdir}/lib%{name}.a
@@ -595,6 +605,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Jul 12 2016 Jeff Bastian <jbastian@redhat.com> - 0.2.18-2
+- update for aarch64
+
 * Tue Apr 12 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-1
 - Update to 0.2.18.
 
