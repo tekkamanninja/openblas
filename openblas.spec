@@ -16,6 +16,9 @@ Patch0:         openblas-0.2.15-system_lapack.patch
 Patch1:         openblas-0.2.5-libname.patch
 # Don't use constructor priorities on too old architectures
 Patch2:         openblas-0.2.15-constructor.patch
+# Supply the proper flags to the test makefile
+Patch3:         openblas-0.2.18-tests.patch
+
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:  gcc-gfortran
@@ -78,7 +81,7 @@ BuildRequires:  lapack64-static
 
 # Upstream supports the package only on these architectures.
 # Runtime processor detection is not available on other archs.
-ExclusiveArch:  x86_64 %{ix86} armv7hl ppc64le aarch64
+ExclusiveArch:  x86_64 %{ix86} armv7hl %{power64} aarch64
 
 %global base_description \
 OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD \
@@ -213,6 +216,7 @@ cd OpenBLAS-%{version}
 %if 0%{?rhel} == 5
 %patch2 -p1 -b .constructor
 %endif
+%patch3 -p1 -b .tests
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -331,6 +335,12 @@ export AVX="NO_AVX2=1"
 %ifarch armv7hl
 TARGET="TARGET=ARMV7 DYNAMIC_ARCH=0"
 %endif
+%ifarch ppc64
+TARGET="TARGET=POWER6 DYNAMIC_ARCH=0"
+%endif
+%ifarch ppc64p7
+TARGET="TARGET=POWER7 DYNAMIC_ARCH=0"
+%endif
 %ifarch ppc64le
 TARGET="TARGET=POWER8 DYNAMIC_ARCH=0"
 %endif
@@ -374,6 +384,12 @@ cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 # Fix name of libraries
 %ifarch armv7hl
 suffix="_armv7"
+%endif
+%ifarch ppc64
+suffix="_power6"
+%endif
+%ifarch ppc64p7
+suffix="_power7"
 %endif
 %ifarch ppc64le
 suffix="_power8"
@@ -605,6 +621,11 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Jul 13 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-3
+- Enable ppc64 and ppc64p7 architectures
+  based on Dan Horák's patch (BZ #1356189).
+- Supply proper make flags to the tests.
+
 * Tue Jul 12 2016 Jeff Bastian <jbastian@redhat.com> - 0.2.18-2
 - update for aarch64
 
