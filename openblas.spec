@@ -33,6 +33,7 @@ Patch3:         openblas-0.2.18-tests.patch
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:  gcc-gfortran
+BuildRequires:  perl-devel
 
 # Do we have execstack?
 %if 0%{?rhel} == 7
