@@ -2,9 +2,20 @@
 # Version of bundled lapack
 %global lapackver 3.5.0
 
+# DO NOT "CLEAN UP" OR MODIFY THIS SPEC FILE WITHOUT ASKING THE
+# MAINTAINER FIRST!
+#
+# OpenBLAS is hand written assembler code and it has a limited number
+# of supported architectures. Don't enable any new architectures /
+# processors a) without checking that it is actually supported and b)
+# without modifying the target flags.
+#
+# The same spec is also used on the EPEL branches, meaninng that some
+# "obsoleted" features are still kept in the spec.
+
 Name:           openblas
 Version:        0.2.18
-Release:        3%{?dist}
+Release:        5%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -31,11 +42,7 @@ BuildRequires:  gcc-gfortran
 %global execstack 1
 %endif
 %else
-%ifarch aarch64
-%global execstack 0
-%else
 %global execstack 1
-%endif
 %endif
 %if %{execstack}
 BuildRequires:  /usr/bin/execstack
@@ -544,6 +551,7 @@ rm -rf %{buildroot}%{_libdir}/cmake
 rm -rf %{buildroot}
 
 %files
+# DO NOT REMOVE %defattr SECTIONS!
 %defattr(-,root,root,-)
 %doc serial/Changelog.txt serial/GotoBLAS* serial/LICENSE
 %{_libdir}/lib%{name}-*.so
@@ -621,6 +629,13 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+- Wed Aug 17 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-5
+- Revert "minor spec cleanups" by Peter Robinson.
+
+* Wed Jul 13 2016 Peter Robinson <pbrobinson@fedoraproject.org> 0.2.18-4
+- aarch64 has execstack in Fedora
+- Minor spec cleanups
+
 * Wed Jul 13 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-3
 - Enable ppc64 and ppc64p7 architectures
   based on Dan Horák's patch (BZ #1356189).
