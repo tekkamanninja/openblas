@@ -2,9 +2,20 @@
 # Version of bundled lapack
 %global lapackver 3.5.0
 
+# DO NOT "CLEAN UP" OR MODIFY THIS SPEC FILE WITHOUT ASKING THE
+# MAINTAINER FIRST!
+#
+# OpenBLAS is hand written assembler code and it has a limited number
+# of supported architectures. Don't enable any new architectures /
+# processors a) without checking that it is actually supported and b)
+# without modifying the target flags.
+#
+# The same spec is also used on the EPEL branches, meaninng that some
+# "obsoleted" features are still kept in the spec.
+
 Name:           openblas
 Version:        0.2.18
-Release:        1%{?dist}
+Release:        5%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -16,13 +27,16 @@ Patch0:         openblas-0.2.15-system_lapack.patch
 Patch1:         openblas-0.2.5-libname.patch
 # Don't use constructor priorities on too old architectures
 Patch2:         openblas-0.2.15-constructor.patch
+# Supply the proper flags to the test makefile
+Patch3:         openblas-0.2.18-tests.patch
+
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:  gcc-gfortran
 
 # Do we have execstack?
 %if 0%{?rhel} == 7
-%ifarch ppc64le
+%ifarch ppc64le aarch64
 %global execstack 0
 %else
 %global execstack 1
@@ -74,7 +88,7 @@ BuildRequires:  lapack64-static
 
 # Upstream supports the package only on these architectures.
 # Runtime processor detection is not available on other archs.
-ExclusiveArch:  x86_64 %{ix86} armv7hl ppc64le
+ExclusiveArch:  x86_64 %{ix86} armv7hl %{power64} aarch64
 
 %global base_description \
 OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD \
@@ -209,6 +223,7 @@ cd OpenBLAS-%{version}
 %if 0%{?rhel} == 5
 %patch2 -p1 -b .constructor
 %endif
+%patch3 -p1 -b .tests
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -327,8 +342,17 @@ export AVX="NO_AVX2=1"
 %ifarch armv7hl
 TARGET="TARGET=ARMV7 DYNAMIC_ARCH=0"
 %endif
+%ifarch ppc64
+TARGET="TARGET=POWER6 DYNAMIC_ARCH=0"
+%endif
+%ifarch ppc64p7
+TARGET="TARGET=POWER7 DYNAMIC_ARCH=0"
+%endif
 %ifarch ppc64le
 TARGET="TARGET=POWER8 DYNAMIC_ARCH=0"
+%endif
+%ifarch aarch64
+TARGET="TARGET=ARMV8 DYNAMIC_ARCH=0"
 %endif
 
 %if 0%{?rhel} == 5
@@ -368,8 +392,17 @@ cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 %ifarch armv7hl
 suffix="_armv7"
 %endif
+%ifarch ppc64
+suffix="_power6"
+%endif
+%ifarch ppc64p7
+suffix="_power7"
+%endif
 %ifarch ppc64le
 suffix="_power8"
+%endif
+%ifarch aarch64
+suffix="_armv8"
 %endif
 slibname=`basename %{buildroot}%{_libdir}/libopenblas${suffix}-*.so .so`
 mv %{buildroot}%{_libdir}/${slibname}.a %{buildroot}%{_libdir}/lib%{name}.a
@@ -518,6 +551,7 @@ rm -rf %{buildroot}%{_libdir}/cmake
 rm -rf %{buildroot}
 
 %files
+# DO NOT REMOVE %defattr SECTIONS!
 %defattr(-,root,root,-)
 %doc serial/Changelog.txt serial/GotoBLAS* serial/LICENSE
 %{_libdir}/lib%{name}-*.so
@@ -595,6 +629,21 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Aug 17 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-5
+- Revert "minor spec cleanups" by Peter Robinson.
+
+* Wed Jul 13 2016 Peter Robinson <pbrobinson@fedoraproject.org> 0.2.18-4
+- aarch64 has execstack in Fedora
+- Minor spec cleanups
+
+* Wed Jul 13 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-3
+- Enable ppc64 and ppc64p7 architectures
+  based on Dan Horák's patch (BZ #1356189).
+- Supply proper make flags to the tests.
+
+* Tue Jul 12 2016 Jeff Bastian <jbastian@redhat.com> - 0.2.18-2
+- update for aarch64
+
 * Tue Apr 12 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-1
 - Update to 0.2.18.
 
