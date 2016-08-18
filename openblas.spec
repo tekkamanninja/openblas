@@ -4,7 +4,7 @@
 
 Name:           openblas
 Version:        0.2.18
-Release:        4%{?dist}
+Release:        3%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -31,9 +31,12 @@ BuildRequires:  gcc-gfortran
 %global execstack 1
 %endif
 %else
+%ifarch aarch64
+%global execstack 0
+%else
 %global execstack 1
 %endif
-
+%endif
 %if %{execstack}
 BuildRequires:  /usr/bin/execstack
 %endif
@@ -78,7 +81,7 @@ BuildRequires:  lapack64-static
 
 # Upstream supports the package only on these architectures.
 # Runtime processor detection is not available on other archs.
-ExclusiveArch:  x86_64 %{ix86} %{arm} %{power64} aarch64
+ExclusiveArch:  x86_64 %{ix86} armv7hl %{power64} aarch64
 
 %global base_description \
 OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD \
@@ -329,7 +332,7 @@ export AVX="NO_AVX2=1"
 %endif
 
 %endif
-%ifarch %{arm}
+%ifarch armv7hl
 TARGET="TARGET=ARMV7 DYNAMIC_ARCH=0"
 %endif
 %ifarch ppc64
@@ -369,6 +372,7 @@ make -C openmp64_   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_
 %endif
 
 %install
+rm -rf %{buildroot}
 # Install serial library and headers
 make -C serial USE_THREAD=0 PREFIX=%{buildroot} OPENBLAS_LIBRARY_DIR=%{buildroot}%{_libdir} OPENBLAS_INCLUDE_DIR=%{buildroot}%{_includedir}/%name OPENBLAS_BINARY_DIR=%{buildroot}%{_bindir} OPENBLAS_CMAKE_DIR=%{buildroot}%{_libdir}/cmake install
 
@@ -378,7 +382,7 @@ cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 %endif
 
 # Fix name of libraries
-%ifarch %{arm}
+%ifarch armv7hl
 suffix="_armv7"
 %endif
 %ifarch ppc64
@@ -536,47 +540,59 @@ rm -rf %{buildroot}%{_libdir}/cmake
 %postun threads64_ -p /sbin/ldconfig
 %endif
 
+%clean
+rm -rf %{buildroot}
 
 %files
+%defattr(-,root,root,-)
 %doc serial/Changelog.txt serial/GotoBLAS* serial/LICENSE
 %{_libdir}/lib%{name}-*.so
 %{_libdir}/lib%{name}.so.*
 
 %files openmp
+%defattr(-,root,root,-)
 %{_libdir}/lib%{name}o-*.so
 %{_libdir}/lib%{name}o.so.*
 
 %files threads
+%defattr(-,root,root,-)
 %{_libdir}/lib%{name}p-*.so
 %{_libdir}/lib%{name}p.so.*
 
 %if %build64
 %files serial64
+%defattr(-,root,root,-)
 %{_libdir}/lib%{name}64-*.so
 %{_libdir}/lib%{name}64.so.*
 
 %files openmp64
+%defattr(-,root,root,-)
 %{_libdir}/lib%{name}o64-*.so
 %{_libdir}/lib%{name}o64.so.*
 
 %files threads64
+%defattr(-,root,root,-)
 %{_libdir}/lib%{name}p64-*.so
 %{_libdir}/lib%{name}p64.so.*
 
 %files serial64_
+%defattr(-,root,root,-)
 %{_libdir}/lib%{name}64_-*.so
 %{_libdir}/lib%{name}64_.so.*
 
 %files openmp64_
+%defattr(-,root,root,-)
 %{_libdir}/lib%{name}o64_-*.so
 %{_libdir}/lib%{name}o64_.so.*
 
 %files threads64_
+%defattr(-,root,root,-)
 %{_libdir}/lib%{name}p64_-*.so
 %{_libdir}/lib%{name}p64_.so.*
 %endif
 
 %files devel
+%defattr(-,root,root,-)
 %{_includedir}/%{name}/
 %{_libdir}/lib%{name}.so
 %{_libdir}/lib%{name}o.so
@@ -591,6 +607,7 @@ rm -rf %{buildroot}%{_libdir}/cmake
 %endif
 
 %files static
+%defattr(-,root,root,-)
 %{_libdir}/lib%{name}.a
 %{_libdir}/lib%{name}o.a
 %{_libdir}/lib%{name}p.a
@@ -604,10 +621,6 @@ rm -rf %{buildroot}%{_libdir}/cmake
 %endif
 
 %changelog
-* Wed Jul 13 2016 Peter Robinson <pbrobinson@fedoraproject.org> 0.2.18-4
-- aarch64 has execstack in Fedora
-- Minor spec cleanups
-
 * Wed Jul 13 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-3
 - Enable ppc64 and ppc64p7 architectures
   based on Dan Horák's patch (BZ #1356189).
