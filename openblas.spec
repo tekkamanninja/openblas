@@ -629,7 +629,7 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-- Wed Aug 17 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-5
+* Wed Aug 17 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-5
 - Revert "minor spec cleanups" by Peter Robinson.
 
 * Wed Jul 13 2016 Peter Robinson <pbrobinson@fedoraproject.org> 0.2.18-4
