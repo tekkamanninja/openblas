@@ -1,8 +1,8 @@
-diff -up OpenBLAS-0.2.18/Makefile.orig OpenBLAS-0.2.18/Makefile
---- OpenBLAS-0.2.18/Makefile.orig	2016-04-12 21:29:19.000000000 +0200
-+++ OpenBLAS-0.2.18/Makefile	2016-07-13 21:32:17.786003290 +0200
-@@ -112,11 +112,11 @@ ifndef TARGET
- ifndef CROSS
+diff -up OpenBLAS-0.2.19/Makefile.tests OpenBLAS-0.2.19/Makefile
+--- OpenBLAS-0.2.19/Makefile.tests	2016-09-01 05:58:42.000000000 +0200
++++ OpenBLAS-0.2.19/Makefile	2016-09-01 22:52:27.092706000 +0200
+@@ -110,11 +110,11 @@ tests :
+ ifndef NOFORTRAN
  	touch $(LIBNAME)
  ifndef NO_FBLAS
 -	$(MAKE) -C test all
@@ -15,4 +15,4 @@ diff -up OpenBLAS-0.2.18/Makefile.orig OpenBLAS-0.2.18/Makefile
 +	$(MAKE) -C ctest FC="$(FC)" CC="$(CC)" COMMON_OPT="$(COMMON_OPT)" FCOMMON_OPT="$(FCOMMON_OPT)" all
  endif
  endif
- endif
+ 
