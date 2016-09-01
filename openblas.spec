@@ -14,8 +14,8 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.2.18
-Release:        5%{?dist}
+Version:        0.2.19
+Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -630,6 +630,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Sep 01 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.19-1
+- Update to 0.2.19.
+
 * Wed Aug 17 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-5
 - Revert "minor spec cleanups" by Peter Robinson.
 
