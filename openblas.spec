@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.19
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -358,9 +358,9 @@ TARGET="TARGET=ARMV8 DYNAMIC_ARCH=0"
 
 %if 0%{?rhel} == 5
 # Gfortran too old to recognize -frecursive
-FCOMMON=""
+FCOMMON="%{optflags}"
 %else
-FCOMMON="-frecursive"
+FCOMMON="%{optflags} -frecursive"
 %endif
 
 # Declare some necessary build flags
@@ -630,8 +630,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Tue Oct 18 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.19-1
+* Thu Oct 20 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.19-2
 - Actually use 8-bit integers in 64-bit interfaces (BZ #1382916).
+
+* Tue Oct 18 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.19-1
 - Update to 0.2.19.
 
 * Wed Aug 17 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.18-5
