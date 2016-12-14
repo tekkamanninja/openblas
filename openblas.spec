@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.19
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -98,6 +98,13 @@ Computational Science, ISCAS. http://www.rdcps.ac.cn
 
 
 %description
+%{base_description}
+
+%package Rblas
+Summary:	A version of OpenBLAS for R to use as libRblas
+Group:		Development/Libraries
+
+%description Rblas
 %{base_description}
 
 %package openmp
@@ -235,6 +242,7 @@ rm -rf lapack-netlib
 %endif
 
 # Make serial, threaded and OpenMP versions; as well as 64-bit versions
+# Also make an libRblas.so
 cd ..
 cp -ar OpenBLAS-%{version} openmp
 cp -ar OpenBLAS-%{version} threaded
@@ -243,7 +251,13 @@ for d in {serial,threaded,openmp}64{,_}; do
     cp -ar OpenBLAS-%{version} $d
 done
 %endif
+cp -ar OpenBLAS-%{version} Rblas
 mv OpenBLAS-%{version} serial
+
+# Hackup Rblas Makefiles
+sed -i 's|.so.$(MAJOR_VERSION)|.so|g' Rblas/Makefile
+sed -i 's|.so.$(MAJOR_VERSION)|.so|g' Rblas/exports/Makefile
+sed -i 's|@ln -fs $(LIBSONAME) $(LIBPREFIX).so|#@ln -fs $(LIBSONAME) $(LIBPREFIX).so|g' Rblas/Makefile
 
 %if %{with system_lapack}
 # Setup 32-bit interface LAPACK
@@ -363,6 +377,8 @@ FCOMMON="%{optflags}"
 FCOMMON="%{optflags} -frecursive"
 %endif
 
+make -C Rblas      $TARGET USE_THREAD=0 USEOPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="$FCOMMON -fPIC" $NMAX LIBPREFIX="libRblas" LIBSONAME="libRblas.so" $AVX $LAPACKE INTERFACE64=0
+
 # Declare some necessary build flags
 make -C serial     $TARGET USE_THREAD=0 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="$FCOMMON -fPIC" $NMAX LIBPREFIX="libopenblas"      $AVX $LAPACKE INTERFACE64=0
 make -C threaded   $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_OPT="%{optflags} -fPIC" FCOMMON_OPT="$FCOMMON -fPIC" $NMAX LIBPREFIX="libopenblasp"     $AVX $LAPACKE INTERFACE64=0
@@ -413,6 +429,10 @@ if [[ "$suffix" != "" ]]; then
 else
    sname=${slibname}
 fi
+
+# Install the Rblas library
+mkdir -p %{buildroot}%{_libdir}/R/lib/
+install -p -m 755 Rblas/libRblas.so %{buildroot}%{_libdir}/R/lib/
 
 # Install the OpenMP library
 olibname=`echo ${slibname} | sed "s|lib%{name}|lib%{name}o|g"`
@@ -528,6 +548,9 @@ rm -rf %{buildroot}%{_libdir}/cmake
 %post openmp -p /sbin/ldconfig
 %postun openmp -p /sbin/ldconfig
 
+%post Rblas -p /sbin/ldconfig
+%postun Rblas -p /sbin/ldconfig
+
 %post threads -p /sbin/ldconfig
 %postun threads -p /sbin/ldconfig
 
@@ -615,6 +638,10 @@ rm -rf %{buildroot}
 %{_libdir}/lib%{name}p64_.so
 %endif
 
+%files Rblas
+%defattr(-,root,root,-)
+%{_libdir}/lib/R/libRblas.so
+
 %files static
 %defattr(-,root,root,-)
 %{_libdir}/lib%{name}.a
@@ -630,6 +657,12 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Dec 14 2016 Tom Callaway <spot@fedoraproject.org> - 0.2.19-4
+- build a copy of openblas that thinks it is Rblas
+  There are no code changes, except for libname and soname, it is identical to libopenblas.so.0
+  Unfortunately, while R itself is fine using a symlink from libopenblas.so.0 to libRblas.so
+  the larger R ecosystem becomes unhappy in this scenario. 
+
 * Thu Nov 03 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.19-3
 - Fix linkage of OpenMP libraries (BZ #1391491).
 
