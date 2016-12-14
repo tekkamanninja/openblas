@@ -640,7 +640,7 @@ rm -rf %{buildroot}
 
 %files Rblas
 %defattr(-,root,root,-)
-%{_libdir}/lib/R/libRblas.so
+%{_libdir}/R/lib/libRblas.so
 
 %files static
 %defattr(-,root,root,-)
