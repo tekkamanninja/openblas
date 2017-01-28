@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.19
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -657,11 +657,14 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sat Jan 28 2017 Björn Esser <besser82@fedoraproject.org> - 0.2.19-5
+- Rebuilt for GCC-7
+
 * Wed Dec 14 2016 Tom Callaway <spot@fedoraproject.org> - 0.2.19-4
 - build a copy of openblas that thinks it is Rblas
   There are no code changes, except for libname and soname, it is identical to libopenblas.so.0
   Unfortunately, while R itself is fine using a symlink from libopenblas.so.0 to libRblas.so
-  the larger R ecosystem becomes unhappy in this scenario. 
+  the larger R ecosystem becomes unhappy in this scenario.
 
 * Thu Nov 03 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.19-3
 - Fix linkage of OpenMP libraries (BZ #1391491).
