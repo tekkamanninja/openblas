@@ -666,7 +666,7 @@ rm -rf %{buildroot}
 
 %changelog
 * Fri Feb 03 2017 Björn Esser <besser82@fedoraproject.org> - 0.2.19-6
-- Add Patch4 to fix register clobbers
+- Add Patch4 to fix register clobbers (BZ #1417385)
 
 * Sat Jan 28 2017 Björn Esser <besser82@fedoraproject.org> - 0.2.19-5
 - Rebuilt for GCC-7
