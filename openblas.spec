@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.19
-Release:        6%{?dist}
+Release:        7%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -29,13 +29,8 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.2.19-tests.patch
-# Fix register clobbers
-#   - Remove PIC registers and memory from clobber list,
-#     add vector registers to list
-#   - fixes accidental overwriting of callee saved registers
-#     and compilation with gcc7
-# Copied from patch provided by Alan Modra in #1078
-Patch4:         https://github.com/xianyi/OpenBLAS/pull/1081.patch#/openblas-0.2.19-fix_register_clobbers.patch
+# From https://github.com/xianyi/OpenBLAS/issues/1078#issuecomment-279527810
+Patch4:         openblas-0.2.19-fix_register_clobbers.patch
 
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
@@ -665,6 +660,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Feb 13 2017 Björn Esser <besser82@fedoraproject.org> - 0.2.19-7
+- Upgrade Patch4 to hopefully fully fix the issues on PPC64LE
+
 * Fri Feb 03 2017 Björn Esser <besser82@fedoraproject.org> - 0.2.19-6
 - Add Patch4 to fix register clobbers (BZ #1417385)
 
