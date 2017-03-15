@@ -15,12 +15,14 @@
 
 Name:           openblas
 Version:        0.2.19
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
 Source0:        https://github.com/xianyi/OpenBLAS/archive/v%{version}.tar.gz
+# This contains the list of arches that openblas works on
+Source1:        openblas_arches
 # Use system lapack
 Patch0:         openblas-0.2.15-system_lapack.patch
 # Drop extra p from threaded library name
@@ -91,7 +93,8 @@ BuildRequires:  lapack64-static
 
 # Upstream supports the package only on these architectures.
 # Runtime processor detection is not available on other archs.
-ExclusiveArch:  x86_64 %{ix86} armv7hl %{power64} aarch64
+%global openblas_arches %(cat %SOURCE1)
+ExclusiveArch:  %{openblas_arches}
 
 %global base_description \
 OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD \
@@ -204,6 +207,7 @@ Requires:       %{name}-openmp64_%{?_isa} = %{version}-%{release}
 Requires:       %{name}-threads64_%{?_isa} = %{version}-%{release}
 Requires:       %{name}-serial64_%{?_isa} = %{version}-%{release}
 %endif
+Requires:       %{name}-srpm-macros = %{version}-%{release}
 
 %description devel
 %{base_description}
@@ -219,6 +223,14 @@ Requires:       %{name}-devel%{?_isa} = %{version}-%{release}
 %{base_description}
 
 This package contains the static libraries.
+
+%package srpm-macros
+Summary:        RPM macros for building source packages
+BuildArch:      noarch
+
+%description srpm-macros
+RPM macros for building source packages.
+
 
 %prep
 %setup -q -c -T
@@ -545,6 +557,12 @@ done
 # Get rid of generated CMake config
 rm -rf %{buildroot}%{_libdir}/cmake
 
+# rpm macro
+%global macrosdir %(d=%{_rpmconfigdir}/macros.d; [ -d $d ] || d=%{_sysconfdir}/rpm; echo $d)
+mkdir -p %{buildroot}%{macrosdir}
+# Avoid expansion of macros inside %%openblas_arches by catting the source again
+echo %%openblas_arches $(cat %SOURCE1) > %{buildroot}%{macrosdir}/macros.%{name}-srpm
+
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
 
@@ -630,6 +648,9 @@ rm -rf %{buildroot}
 %{_libdir}/lib%{name}p64_.so
 %endif
 
+%files srpm-macros
+%{macrosdir}/macros.%{name}-srpm
+
 %files Rblas
 %{_libdir}/R/lib/libRblas.so
 
@@ -647,6 +668,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Mar 15 2017 Orion Poplawski <orion@cora.nwra.com> - 0.2.19-8
+- Define %%openblas_arches for dependent packages to use
+
 * Mon Feb 13 2017 Björn Esser <besser82@fedoraproject.org> - 0.2.19-7
 - Upgrade Patch4 to hopefully fully fix the issues on PPC64LE
 
