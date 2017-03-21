@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.19
-Release:        9%{?dist}
+Release:        10%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -204,7 +204,7 @@ Requires:       %{name}-openmp64_%{?_isa} = %{version}-%{release}
 Requires:       %{name}-threads64_%{?_isa} = %{version}-%{release}
 Requires:       %{name}-serial64_%{?_isa} = %{version}-%{release}
 %endif
-Requires:       %{name}-srpm-macros = %{version}-%{release}
+Requires:       %{name}-srpm-macros
 
 %description devel
 %{base_description}
@@ -649,6 +649,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Mar 20 2017 Orion Poplawski <orion@cora.nwra.com> - 0.2.19-10
+- Drop openblas-srpm-macros version requirement
+
 * Mon Mar 20 2017 Orion Poplawski <orion@cora.nwra.com> - 0.2.19-9
 - Move openblas-srpm-macros to separate package
 
