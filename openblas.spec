@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.19
-Release:        10%{?dist}
+Release:        11%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -31,6 +31,8 @@ Patch2:         openblas-0.2.15-constructor.patch
 Patch3:         openblas-0.2.19-tests.patch
 # From https://github.com/xianyi/OpenBLAS/issues/1078#issuecomment-279527810
 Patch4:         openblas-0.2.19-fix_register_clobbers.patch
+# Backported support for s390x from the develop branch
+Patch5:         openblas-0.2.19-s390x.patch
 
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
@@ -237,6 +239,7 @@ cd OpenBLAS-%{version}
 %endif
 %patch3 -p1 -b .tests
 %patch4 -p1 -b .register_clobbers
+%patch5 -p1 -b .s390x
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -425,6 +428,9 @@ suffix="_power8"
 %endif
 %ifarch aarch64
 suffix="_armv8"
+%endif
+%ifarch s390x
+suffix="_zarch_generic"
 %endif
 slibname=`basename %{buildroot}%{_libdir}/libopenblas${suffix}-*.so .so`
 mv %{buildroot}%{_libdir}/${slibname}.a %{buildroot}%{_libdir}/lib%{name}.a
@@ -649,6 +655,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon May 29 2017 Dan Horák <dan[at]danny.cz> - 0.2.19-11
+- add generic s390x support (#1442048)
+
 * Mon Mar 20 2017 Orion Poplawski <orion@cora.nwra.com> - 0.2.19-10
 - Drop openblas-srpm-macros version requirement
 

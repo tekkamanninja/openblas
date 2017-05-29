@@ -1,0 +1,4152 @@
+From c4b61f74f18c674c69301122ba95bdbca6f55d0f Mon Sep 17 00:00:00 2001
+From: Zhang Xianyi <traits.zhang@gmail.com>
+Date: Fri, 15 Apr 2016 18:02:24 -0400
+Subject: [PATCH 1/6] Init IBM z system (s390x) porting.
+
+(cherry picked from commit dd43661cfd5d3de6e9fe804587b89f1094c85e41)
+---
+ Makefile.zarch                    |   6 ++
+ c_check                           |   8 +++
+ common.h                          |   4 ++
+ common_linux.h                    |   4 +-
+ common_zarch.h                    | 139 ++++++++++++++++++++++++++++++++++++++
+ cpuid_zarch.c                     |  91 +++++++++++++++++++++++++
+ ctest.c                           |   4 ++
+ getarch.c                         |  10 ++-
+ kernel/zarch/KERNEL               |  30 ++++++++
+ kernel/zarch/KERNEL.ZARCH_GENERIC | 134 ++++++++++++++++++++++++++++++++++++
+ kernel/zarch/Makefile             |   2 +
+ param.h                           |  39 +++++++++++
+ 12 files changed, 467 insertions(+), 4 deletions(-)
+ create mode 100644 Makefile.zarch
+ create mode 100644 common_zarch.h
+ create mode 100644 cpuid_zarch.c
+ create mode 100644 kernel/zarch/KERNEL
+ create mode 100644 kernel/zarch/KERNEL.ZARCH_GENERIC
+ create mode 100644 kernel/zarch/Makefile
+
+diff --git a/Makefile.zarch b/Makefile.zarch
+new file mode 100644
+index 00000000..138c5941
+--- /dev/null
++++ b/Makefile.zarch
+@@ -0,0 +1,6 @@
++
++ifeq ($(CORE), Z13)
++CCOMMON_OPT += -march=z13
++FCOMMON_OPT += -march=z13
++endif
++
+diff --git a/c_check b/c_check
+index 2ec9fc48..1bd52201 100644
+--- a/c_check
++++ b/c_check
+@@ -10,6 +10,7 @@ $hostarch = "x86_64" if ($hostarch eq "amd64");
+ $hostarch = "arm" if ($hostarch =~ /^arm.*/);
+ $hostarch = "arm64" if ($hostarch eq "aarch64");
+ $hostarch = "power" if ($hostarch =~ /^(powerpc|ppc).*/);
++$hostarch = "zarch" if ($hostarch eq "s390x");
+ 
+ $tmpf = new File::Temp( UNLINK => 1 );
+ $binary = $ENV{"BINARY"};
+@@ -72,6 +73,7 @@ $architecture = sparc  if ($data =~ /ARCH_SPARC/);
+ $architecture = ia64   if ($data =~ /ARCH_IA64/);
+ $architecture = arm    if ($data =~ /ARCH_ARM/);
+ $architecture = arm64  if ($data =~ /ARCH_ARM64/);
++$architecture = zarch  if ($data =~ /ARCH_ZARCH/);
+ 
+ $defined = 0;
+ 
+@@ -96,6 +98,11 @@ if (($architecture eq "arm") || ($architecture eq "arm64")) {
+     $defined = 1;
+ }
+ 
++if ($architecture eq "zarch") {
++    $defined = 1;
++    $binary = 64;
++}
++
+ if ($architecture eq "alpha") {
+     $defined = 1;
+     $binary = 64;
+@@ -187,6 +194,7 @@ $architecture = sparc  if ($data =~ /ARCH_SPARC/);
+ $architecture = ia64   if ($data =~ /ARCH_IA64/);
+ $architecture = arm    if ($data =~ /ARCH_ARM/);
+ $architecture = arm64  if ($data =~ /ARCH_ARM64/);
++$architecture = zarch  if ($data =~ /ARCH_ZARCH/);
+ 
+ $binformat    = bin32;
+ $binformat    = bin64  if ($data =~ /BINARY_64/);
+diff --git a/common.h b/common.h
+index 480174c1..b4acada3 100644
+--- a/common.h
++++ b/common.h
+@@ -420,6 +420,10 @@ please https://github.com/xianyi/OpenBLAS/issues/246
+ #include "common_arm64.h"
+ #endif
+ 
++#ifdef ARCH_ZARCH
++#include "common_zarch.h"
++#endif
++
+ #ifndef ASSEMBLER
+ #ifdef OS_WINDOWS
+ typedef char env_var_t[MAX_PATH];
+diff --git a/common_linux.h b/common_linux.h
+index cab5e5f7..35f3fb65 100644
+--- a/common_linux.h
++++ b/common_linux.h
+@@ -70,7 +70,7 @@ extern long int syscall (long int __sysno, ...);
+ static inline int my_mbind(void *addr, unsigned long len, int mode,
+ 			   unsigned long *nodemask, unsigned long maxnode,
+ 			   unsigned flags) {
+-#if defined (__LSB_VERSION__)
++#if defined (__LSB_VERSION__) || defined(ARCH_ZARCH)
+ // So far,  LSB (Linux Standard Base) don't support syscall().
+ // https://lsbbugs.linuxfoundation.org/show_bug.cgi?id=3482
+         return 0;
+@@ -90,7 +90,7 @@ static inline int my_mbind(void *addr, unsigned long len, int mode,
+ }
+ 
+ static inline int my_set_mempolicy(int mode, const unsigned long *addr, unsigned long flag) {
+-#if defined (__LSB_VERSION__)
++#if defined (__LSB_VERSION__) || defined(ARCH_ZARCH)
+ // So far,  LSB (Linux Standard Base) don't support syscall().
+ // https://lsbbugs.linuxfoundation.org/show_bug.cgi?id=3482
+   return 0;
+diff --git a/common_zarch.h b/common_zarch.h
+new file mode 100644
+index 00000000..7c04cf42
+--- /dev/null
++++ b/common_zarch.h
+@@ -0,0 +1,139 @@
++/*****************************************************************************
++Copyright (c) 2011-2016, The OpenBLAS Project
++All rights reserved.
++
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++
++   1. Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++
++   2. Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in
++      the documentation and/or other materials provided with the
++      distribution.
++   3. Neither the name of the OpenBLAS project nor the names of 
++      its contributors may be used to endorse or promote products 
++      derived from this software without specific prior written 
++      permission.
++
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++**********************************************************************************/
++
++#ifndef COMMON_ZARCH
++#define COMMON_ZARCH
++
++#define MB   
++//__asm__ __volatile__ ("dmb  ish" : : : "memory")
++#define WMB  
++//__asm__ __volatile__ ("dmb  ishst" : : : "memory")
++
++
++#define INLINE inline
++
++#define RETURN_BY_COMPLEX
++
++#ifndef ASSEMBLER
++
++  /*
++static void __inline blas_lock(volatile BLASULONG *address){
++
++  BLASULONG ret;
++
++  do {
++    while (*address) {YIELDING;};
++
++    __asm__ __volatile__(
++			 "mov	x4, #1							\n\t"
++                         "1:                                                            \n\t"
++                         "ldaxr x2, [%1]                                                \n\t"
++                         "cbnz  x2, 1b                                                  \n\t"
++			 "2:								\n\t"
++                         "stxr  w3, x4, [%1]                                            \n\t"
++                         "cbnz  w3, 1b                                                  \n\t"
++                         "mov   %0, #0                                                  \n\t"
++                         : "=r"(ret), "=r"(address)
++                         : "1"(address)
++                         : "memory", "x2" , "x3", "x4"
++
++
++    );
++
++
++  } while (ret);
++
++}
++  */
++//#define BLAS_LOCK_DEFINED
++
++
++
++static inline int blas_quickdivide(blasint x, blasint y){
++  return x / y;
++}
++
++#if defined(DOUBLE)
++#define GET_IMAGE(res)  __asm__ __volatile__("str d1, %0" : "=m"(res) : : "memory")
++#else
++#define GET_IMAGE(res)  __asm__ __volatile__("str s1, %0" : "=m"(res) : : "memory")
++#endif
++
++#define GET_IMAGE_CANCEL
++
++#endif
++
++
++#ifndef F_INTERFACE
++#define REALNAME ASMNAME
++#else
++#define REALNAME ASMFNAME
++#endif
++
++#if defined(ASSEMBLER) && !defined(NEEDPARAM)
++
++#define PROLOGUE \
++	.text ;\
++	.align	4 ;\
++	.global	REALNAME ;\
++	.type	REALNAME, %function ;\
++REALNAME:
++
++#define EPILOGUE
++
++#define PROFCODE
++
++#endif
++
++
++#define SEEK_ADDRESS
++
++#ifndef PAGESIZE
++#define PAGESIZE        ( 4 << 10)
++#endif
++#define HUGE_PAGESIZE   ( 4 << 20)
++
++#if defined(CORTEXA57)
++#define BUFFER_SIZE     (20 << 20)
++#else
++#define BUFFER_SIZE     (16 << 20)
++#endif
++
++
++#define BASE_ADDRESS (START_ADDRESS - BUFFER_SIZE * MAX_CPU_NUMBER)
++
++#ifndef MAP_ANONYMOUS
++#define MAP_ANONYMOUS MAP_ANON
++#endif
++
++#endif
++
+diff --git a/cpuid_zarch.c b/cpuid_zarch.c
+new file mode 100644
+index 00000000..248cd47e
+--- /dev/null
++++ b/cpuid_zarch.c
+@@ -0,0 +1,91 @@
++/**************************************************************************
++  Copyright (c) 2016, The OpenBLAS Project
++  All rights reserved.
++  Redistribution and use in source and binary forms, with or without
++  modification, are permitted provided that the following conditions are
++  met:
++  1. Redistributions of source code must retain the above copyright
++  notice, this list of conditions and the following disclaimer.
++  2. Redistributions in binary form must reproduce the above copyright
++  notice, this list of conditions and the following disclaimer in
++  the documentation and/or other materials provided with the
++  distribution.
++  3. Neither the name of the OpenBLAS project nor the names of
++  its contributors may be used to endorse or promote products
++  derived from this software without specific prior written permission.
++  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++  ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++  *****************************************************************************/
++
++#include <string.h>
++
++#define CPU_GENERIC    	0
++#define CPU_Z13       	1
++
++static char *cpuname[] = {
++  "ZARCH_GENERIC",
++  "Z13"
++};
++
++static char *cpuname_lower[] = {
++  "zarch_generic",
++  "z13"
++};
++
++int detect(void)
++{
++  return CPU_GENERIC;
++}
++
++void get_libname(void)
++{
++
++	int d = detect();
++	printf("%s", cpuname_lower[d]);
++}
++
++char *get_corename(void)
++{
++	return cpuname[detect()];
++}
++
++void get_architecture(void)
++{
++	printf("ZARCH");
++}
++
++void get_subarchitecture(void)
++{
++	int d = detect();
++	printf("%s", cpuname[d]);
++}
++
++void get_subdirname(void)
++{
++	printf("zarch");
++}
++
++
++void get_cpuconfig(void)
++{
++
++	int d = detect();
++	switch (d){
++	case CPU_GENERIC:
++	  printf("#define ZARCH_GENERIC\n");
++ 	  printf("#define DTB_DEFAULT_ENTRIES 64\n");
++	  break;
++	case CPU_Z13:
++	  printf("#define Z13\n");
++	  printf("#define DTB_DEFAULT_ENTRIES 64\n");
++	  break;
++	}
++}
+diff --git a/ctest.c b/ctest.c
+index e0ef46e6..27d3b473 100644
+--- a/ctest.c
++++ b/ctest.c
+@@ -105,6 +105,10 @@ ARCH_X86_64
+ ARCH_POWER
+ #endif
+ 
++#if defined(__s390x__) || defined(__zarch__)
++ARCH_ZARCH
++#endif
++
+ #ifdef __mips64
+ ARCH_MIPS64
+ #endif
+diff --git a/getarch.c b/getarch.c
+index f8069e50..0d810e6c 100644
+--- a/getarch.c
++++ b/getarch.c
+@@ -907,6 +907,12 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #define OPENBLAS_SUPPORTED
+ #endif
+ 
++#if defined(__zarch__) || defined(__s390x__)
++#define ZARCH
++#include "cpuid_zarch.c"
++#define OPENBLAS_SUPPORTED
++#endif
++
+ #ifdef INTEL_AMD
+ #include "cpuid_x86.c"
+ #define OPENBLAS_SUPPORTED
+@@ -1006,7 +1012,7 @@ int main(int argc, char *argv[]){
+ #ifdef FORCE
+     printf("CORE=%s\n", CORENAME);
+ #else
+-#if defined(INTEL_AMD) || defined(POWER) || defined(__mips__) || defined(__arm__) || defined(__aarch64__)
++#if defined(INTEL_AMD) || defined(POWER) || defined(__mips__) || defined(__arm__) || defined(__aarch64__) || defined(ZARCH)
+     printf("CORE=%s\n", get_corename());
+ #endif
+ #endif
+@@ -1113,7 +1119,7 @@ int main(int argc, char *argv[]){
+ #ifdef FORCE
+     printf("#define CHAR_CORENAME \"%s\"\n", CORENAME);
+ #else
+-#if defined(INTEL_AMD) || defined(POWER) || defined(__mips__) || defined(__arm__) || defined(__aarch64__)
++#if defined(INTEL_AMD) || defined(POWER) || defined(__mips__) || defined(__arm__) || defined(__aarch64__) || defined(ZARCH)
+     printf("#define CHAR_CORENAME \"%s\"\n", get_corename());
+ #endif
+ #endif
+diff --git a/kernel/zarch/KERNEL b/kernel/zarch/KERNEL
+new file mode 100644
+index 00000000..68d68b5f
+--- /dev/null
++++ b/kernel/zarch/KERNEL
+@@ -0,0 +1,30 @@
++ifndef SCABS_KERNEL
++SCABS_KERNEL	= ../generic/cabs.c
++endif
++
++ifndef DCABS_KERNEL
++DCABS_KERNEL	= ../generic/cabs.c
++endif
++
++ifndef QCABS_KERNEL
++QCABS_KERNEL	= ../generic/cabs.c
++endif
++
++ifndef LSAME_KERNEL
++LSAME_KERNEL	= ../generic/lsame.c
++endif
++
++ifndef SGEMM_BETA
++SGEMM_BETA = ../generic/gemm_beta.c
++endif
++ifndef DGEMM_BETA
++DGEMM_BETA = ../generic/gemm_beta.c
++endif
++ifndef CGEMM_BETA
++CGEMM_BETA = ../generic/zgemm_beta.c
++endif
++ifndef ZGEMM_BETA
++ZGEMM_BETA = ../generic/zgemm_beta.c
++endif
++
++
+diff --git a/kernel/zarch/KERNEL.ZARCH_GENERIC b/kernel/zarch/KERNEL.ZARCH_GENERIC
+new file mode 100644
+index 00000000..27157dad
+--- /dev/null
++++ b/kernel/zarch/KERNEL.ZARCH_GENERIC
+@@ -0,0 +1,134 @@
++SAMAXKERNEL  = ../arm/amax.c
++DAMAXKERNEL  = ../arm/amax.c
++CAMAXKERNEL  = ../arm/zamax.c
++ZAMAXKERNEL  = ../arm/zamax.c
++
++SAMINKERNEL  = ../arm/amin.c
++DAMINKERNEL  = ../arm/amin.c
++CAMINKERNEL  = ../arm/zamin.c
++ZAMINKERNEL  = ../arm/zamin.c
++
++SMAXKERNEL   = ../arm/max.c
++DMAXKERNEL   = ../arm/max.c
++
++SMINKERNEL   = ../arm/min.c
++DMINKERNEL   = ../arm/min.c
++
++ISAMAXKERNEL = ../arm/iamax.c
++IDAMAXKERNEL = ../arm/iamax.c
++ICAMAXKERNEL = ../arm/izamax.c
++IZAMAXKERNEL = ../arm/izamax.c
++
++ISAMINKERNEL = ../arm/iamin.c
++IDAMINKERNEL = ../arm/iamin.c
++ICAMINKERNEL = ../arm/izamin.c
++IZAMINKERNEL = ../arm/izamin.c
++
++ISMAXKERNEL  = ../arm/imax.c
++IDMAXKERNEL  = ../arm/imax.c
++
++ISMINKERNEL  = ../arm/imin.c
++IDMINKERNEL  = ../arm/imin.c
++
++SASUMKERNEL  = ../arm/asum.c
++DASUMKERNEL  = ../arm/asum.c
++CASUMKERNEL  = ../arm/zasum.c
++ZASUMKERNEL  = ../arm/zasum.c
++
++SAXPYKERNEL  = ../arm/axpy.c
++DAXPYKERNEL  = ../arm/axpy.c
++CAXPYKERNEL  = ../arm/zaxpy.c
++ZAXPYKERNEL  = ../arm/zaxpy.c
++
++SCOPYKERNEL  = ../arm/copy.c
++DCOPYKERNEL  = ../arm/copy.c
++CCOPYKERNEL  = ../arm/zcopy.c
++ZCOPYKERNEL  = ../arm/zcopy.c
++
++SDOTKERNEL   = ../arm/dot.c
++DDOTKERNEL   = ../arm/dot.c
++CDOTKERNEL   = ../arm/zdot.c
++ZDOTKERNEL   = ../arm/zdot.c
++
++SNRM2KERNEL  = ../arm/nrm2.c
++DNRM2KERNEL  = ../arm/nrm2.c
++CNRM2KERNEL  = ../arm/znrm2.c
++ZNRM2KERNEL  = ../arm/znrm2.c
++
++SROTKERNEL   = ../arm/rot.c
++DROTKERNEL   = ../arm/rot.c
++CROTKERNEL   = ../arm/zrot.c
++ZROTKERNEL   = ../arm/zrot.c
++
++SSCALKERNEL  = ../arm/scal.c
++DSCALKERNEL  = ../arm/scal.c
++CSCALKERNEL  = ../arm/zscal.c
++ZSCALKERNEL  = ../arm/zscal.c
++
++SSWAPKERNEL  = ../arm/swap.c
++DSWAPKERNEL  = ../arm/swap.c
++CSWAPKERNEL  = ../arm/zswap.c
++ZSWAPKERNEL  = ../arm/zswap.c
++
++SGEMVNKERNEL = ../arm/gemv_n.c
++DGEMVNKERNEL = ../arm/gemv_n.c
++CGEMVNKERNEL = ../arm/zgemv_n.c
++ZGEMVNKERNEL = ../arm/zgemv_n.c
++
++SGEMVTKERNEL = ../arm/gemv_t.c
++DGEMVTKERNEL = ../arm/gemv_t.c
++CGEMVTKERNEL = ../arm/zgemv_t.c
++ZGEMVTKERNEL = ../arm/zgemv_t.c
++
++STRMMKERNEL	= ../generic/trmmkernel_2x2.c
++DTRMMKERNEL	= ../generic/trmmkernel_2x2.c
++CTRMMKERNEL	= ../generic/ztrmmkernel_2x2.c
++ZTRMMKERNEL	= ../generic/ztrmmkernel_2x2.c
++
++SGEMMKERNEL    =  ../generic/gemmkernel_2x2.c
++SGEMMONCOPY    =  ../generic/gemm_ncopy_2.c
++SGEMMOTCOPY    =  ../generic/gemm_tcopy_2.c
++SGEMMONCOPYOBJ =  sgemm_oncopy.o
++SGEMMOTCOPYOBJ =  sgemm_otcopy.o
++
++DGEMMKERNEL    =  ../generic/gemmkernel_2x2.c
++DGEMMONCOPY    = ../generic/gemm_ncopy_2.c
++DGEMMOTCOPY    = ../generic/gemm_tcopy_2.c
++DGEMMONCOPYOBJ = dgemm_oncopy.o
++DGEMMOTCOPYOBJ = dgemm_otcopy.o
++
++CGEMMKERNEL    = ../generic/zgemmkernel_2x2.c
++CGEMMONCOPY    = ../generic/zgemm_ncopy_2.c
++CGEMMOTCOPY    = ../generic/zgemm_tcopy_2.c
++CGEMMONCOPYOBJ =  cgemm_oncopy.o
++CGEMMOTCOPYOBJ =  cgemm_otcopy.o
++
++ZGEMMKERNEL    = ../generic/zgemmkernel_2x2.c
++ZGEMMONCOPY    = ../generic/zgemm_ncopy_2.c
++ZGEMMOTCOPY    = ../generic/zgemm_tcopy_2.c
++ZGEMMONCOPYOBJ =  zgemm_oncopy.o
++ZGEMMOTCOPYOBJ =  zgemm_otcopy.o
++
++STRSMKERNEL_LN	=  ../generic/trsm_kernel_LN.c
++STRSMKERNEL_LT	=  ../generic/trsm_kernel_LT.c
++STRSMKERNEL_RN	=  ../generic/trsm_kernel_RN.c
++STRSMKERNEL_RT	=  ../generic/trsm_kernel_RT.c
++
++DTRSMKERNEL_LN	= ../generic/trsm_kernel_LN.c
++DTRSMKERNEL_LT	= ../generic/trsm_kernel_LT.c
++DTRSMKERNEL_RN	= ../generic/trsm_kernel_RN.c
++DTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
++
++CTRSMKERNEL_LN	= ../generic/trsm_kernel_LN.c
++CTRSMKERNEL_LT	= ../generic/trsm_kernel_LT.c
++CTRSMKERNEL_RN	= ../generic/trsm_kernel_RN.c
++CTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
++
++ZTRSMKERNEL_LN	= ../generic/trsm_kernel_LN.c
++ZTRSMKERNEL_LT	= ../generic/trsm_kernel_LT.c
++ZTRSMKERNEL_RN	= ../generic/trsm_kernel_RN.c
++ZTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
++
++
++
++
+diff --git a/kernel/zarch/Makefile b/kernel/zarch/Makefile
+new file mode 100644
+index 00000000..efae70d7
+--- /dev/null
++++ b/kernel/zarch/Makefile
+@@ -0,0 +1,2 @@
++clean ::
++
+diff --git a/param.h b/param.h
+index 480518cd..0268fb5e 100644
+--- a/param.h
++++ b/param.h
+@@ -2509,6 +2509,45 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #endif
+ 
+ 
++#if defined(ZARCH_GENERIC)
++#define SNUMOPT		2
++#define DNUMOPT		2
++
++#define GEMM_DEFAULT_OFFSET_A 0
++#define GEMM_DEFAULT_OFFSET_B 0
++#define GEMM_DEFAULT_ALIGN 0x03fffUL
++
++#define SGEMM_DEFAULT_UNROLL_M  2
++#define SGEMM_DEFAULT_UNROLL_N  2
++
++#define DGEMM_DEFAULT_UNROLL_M  2
++#define DGEMM_DEFAULT_UNROLL_N  2
++
++#define CGEMM_DEFAULT_UNROLL_M  2
++#define CGEMM_DEFAULT_UNROLL_N  2
++
++#define ZGEMM_DEFAULT_UNROLL_M  2
++#define ZGEMM_DEFAULT_UNROLL_N  2
++
++#define SGEMM_DEFAULT_P	128
++#define DGEMM_DEFAULT_P	128
++#define CGEMM_DEFAULT_P 96
++#define ZGEMM_DEFAULT_P 64
++
++#define SGEMM_DEFAULT_Q 240
++#define DGEMM_DEFAULT_Q 120
++#define CGEMM_DEFAULT_Q 120
++#define ZGEMM_DEFAULT_Q 120
++
++#define SGEMM_DEFAULT_R 12288
++#define DGEMM_DEFAULT_R 8192
++#define CGEMM_DEFAULT_R 4096
++#define ZGEMM_DEFAULT_R 4096
++
++
++#define SYMV_P	16
++#endif
++
+ 
+ #ifdef GENERIC
+ 
+-- 
+2.12.2
+
+
+From f18efc365072feaedc5730b1a0153ab505b8deaa Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dan=20Hor=C3=A1k?= <dan@danny.cz>
+Date: Thu, 13 Apr 2017 12:21:10 +0200
+Subject: [PATCH 2/6] add lapack laswp for zarch
+
+(cherry picked from commit 56762d5e4c54428ef20e14610f1535a74e5ac701)
+---
+ lapack/laswp/zarch/Makefile | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+ create mode 100644 lapack/laswp/zarch/Makefile
+
+diff --git a/lapack/laswp/zarch/Makefile b/lapack/laswp/zarch/Makefile
+new file mode 100644
+index 00000000..af1f0199
+--- /dev/null
++++ b/lapack/laswp/zarch/Makefile
+@@ -0,0 +1,8 @@
++TOPDIR	= ../../..
++include ../../../Makefile.system
++
++LASWP	= ../generic/laswp_k_1.c
++ZLASWP	= ../generic/zlaswp_k_1.c
++
++include ../generic/Makefile
++
+-- 
+2.12.2
+
+
+From d105ac97e1ad4455a76a7929a04a43267daa1191 Mon Sep 17 00:00:00 2001
+From: Abdurrauf <quickwritereader@gmail.com>
+Date: Wed, 4 Jan 2017 19:32:33 +0400
+Subject: [PATCH 3/6] dtrmm and dgemm for z13
+
+(cherry picked from commit 64186678180c08db3f43524082790394a00c5008)
+---
+ CONTRIBUTORS.md                   |    4 +
+ Makefile.zarch                    |    4 +-
+ README.md                         |    5 +
+ common_zarch.h                    |    3 +-
+ cpuid_zarch.c                     |    4 +-
+ kernel/zarch/KERNEL.Z13           |  141 ++++
+ kernel/zarch/KERNEL.ZARCH_GENERIC |    1 -
+ kernel/zarch/gemm8x4V.S           |  615 +++++++++++++++
+ kernel/zarch/kernelMacros.S       | 1529 +++++++++++++++++++++++++++++++++++++
+ kernel/zarch/trmm8x4V.S           |  877 +++++++++++++++++++++
+ param.h                           |   40 +
+ 11 files changed, 3218 insertions(+), 5 deletions(-)
+ create mode 100644 kernel/zarch/KERNEL.Z13
+ create mode 100644 kernel/zarch/gemm8x4V.S
+ create mode 100644 kernel/zarch/kernelMacros.S
+ create mode 100644 kernel/zarch/trmm8x4V.S
+
+diff --git a/CONTRIBUTORS.md b/CONTRIBUTORS.md
+index 5ecf32b9..0489599a 100644
+--- a/CONTRIBUTORS.md
++++ b/CONTRIBUTORS.md
+@@ -161,3 +161,7 @@ In chronological order:
+ * Kaustubh Raste <https://github.com/ksraste/>
+   * [2016-05-09] DTRSM optimization for MIPS P5600 and I6400 using MSA
+   * [2016-05-20] STRSM optimization for MIPS P5600 and I6400 using MSA
++
++* Abdelrauf  <https://github.com/quickwritereader>
++  * [2017-01-01] dgemm and dtrmm kernels for IBM z13
++
+diff --git a/Makefile.zarch b/Makefile.zarch
+index 138c5941..9ec9dc79 100644
+--- a/Makefile.zarch
++++ b/Makefile.zarch
+@@ -1,6 +1,6 @@
+ 
+ ifeq ($(CORE), Z13)
+-CCOMMON_OPT += -march=z13
+-FCOMMON_OPT += -march=z13
++CCOMMON_OPT += -march=z13 -mzvector
++FCOMMON_OPT += -march=z13 -mzvector
+ endif
+ 
+diff --git a/README.md b/README.md
+index ff55edaa..5428f0eb 100644
+--- a/README.md
++++ b/README.md
+@@ -106,6 +106,11 @@ Please read GotoBLAS_01Readme.txt
+ - **ARMV8**: Experimental
+ - **ARM Cortex-A57**: Experimental
+ 
++#### IBM zEnterprise System:
++- **Z13**: Double precision real number
++    git checkout z13
++    make USE_TRMM=1
++
+ ### Support OS:
+ - **GNU/Linux**
+ - **MingWin or Visual Studio(CMake)/Windows**: Please read <https://github.com/xianyi/OpenBLAS/wiki/How-to-use-OpenBLAS-in-Microsoft-Visual-Studio>.
+diff --git a/common_zarch.h b/common_zarch.h
+index 7c04cf42..e105574e 100644
+--- a/common_zarch.h
++++ b/common_zarch.h
+@@ -103,10 +103,11 @@ static inline int blas_quickdivide(blasint x, blasint y){
+ 
+ #define PROLOGUE \
+ 	.text ;\
+-	.align	4 ;\
++	.align	256 ;\
+ 	.global	REALNAME ;\
+ 	.type	REALNAME, %function ;\
+ REALNAME:
++ 
+ 
+ #define EPILOGUE
+ 
+diff --git a/cpuid_zarch.c b/cpuid_zarch.c
+index 248cd47e..e2e3b046 100644
+--- a/cpuid_zarch.c
++++ b/cpuid_zarch.c
+@@ -42,7 +42,9 @@ static char *cpuname_lower[] = {
+ 
+ int detect(void)
+ {
+-  return CPU_GENERIC;
++   // return CPU_GENERIC;
++ return CPU_Z13; 
++    
+ }
+ 
+ void get_libname(void)
+diff --git a/kernel/zarch/KERNEL.Z13 b/kernel/zarch/KERNEL.Z13
+new file mode 100644
+index 00000000..91885da8
+--- /dev/null
++++ b/kernel/zarch/KERNEL.Z13
+@@ -0,0 +1,141 @@
++SAMAXKERNEL  = ../arm/amax.c
++DAMAXKERNEL  = ../arm/amax.c
++CAMAXKERNEL  = ../arm/zamax.c
++ZAMAXKERNEL  = ../arm/zamax.c
++
++SAMINKERNEL  = ../arm/amin.c
++DAMINKERNEL  = ../arm/amin.c
++CAMINKERNEL  = ../arm/zamin.c
++ZAMINKERNEL  = ../arm/zamin.c
++
++SMAXKERNEL   = ../arm/max.c
++DMAXKERNEL   = ../arm/max.c
++
++SMINKERNEL   = ../arm/min.c
++DMINKERNEL   = ../arm/min.c
++
++ISAMAXKERNEL = ../arm/iamax.c
++IDAMAXKERNEL = ../arm/iamax.c
++ICAMAXKERNEL = ../arm/izamax.c
++IZAMAXKERNEL = ../arm/izamax.c
++
++ISAMINKERNEL = ../arm/iamin.c
++IDAMINKERNEL = ../arm/iamin.c
++ICAMINKERNEL = ../arm/izamin.c
++IZAMINKERNEL = ../arm/izamin.c
++
++ISMAXKERNEL  = ../arm/imax.c
++IDMAXKERNEL  = ../arm/imax.c
++
++ISMINKERNEL  = ../arm/imin.c
++IDMINKERNEL  = ../arm/imin.c
++
++SASUMKERNEL  = ../arm/asum.c
++DASUMKERNEL  = ../arm/asum.c
++CASUMKERNEL  = ../arm/zasum.c
++ZASUMKERNEL  = ../arm/zasum.c
++
++SAXPYKERNEL  = ../arm/axpy.c
++DAXPYKERNEL  = ../arm/axpy.c
++CAXPYKERNEL  = ../arm/zaxpy.c
++ZAXPYKERNEL  = ../arm/zaxpy.c
++
++SCOPYKERNEL  = ../arm/copy.c
++DCOPYKERNEL  = ../arm/copy.c
++CCOPYKERNEL  = ../arm/zcopy.c
++ZCOPYKERNEL  = ../arm/zcopy.c
++
++SDOTKERNEL   = ../arm/dot.c
++DDOTKERNEL   = ../arm/dot.c
++CDOTKERNEL   = ../arm/zdot.c
++ZDOTKERNEL   = ../arm/zdot.c
++
++SNRM2KERNEL  = ../arm/nrm2.c
++DNRM2KERNEL  = ../arm/nrm2.c
++CNRM2KERNEL  = ../arm/znrm2.c
++ZNRM2KERNEL  = ../arm/znrm2.c
++
++SROTKERNEL   = ../arm/rot.c
++DROTKERNEL   = ../arm/rot.c
++CROTKERNEL   = ../arm/zrot.c
++ZROTKERNEL   = ../arm/zrot.c
++
++SSCALKERNEL  = ../arm/scal.c
++DSCALKERNEL  = ../arm/scal.c
++CSCALKERNEL  = ../arm/zscal.c
++ZSCALKERNEL  = ../arm/zscal.c
++
++SSWAPKERNEL  = ../arm/swap.c
++DSWAPKERNEL  = ../arm/swap.c
++CSWAPKERNEL  = ../arm/zswap.c
++ZSWAPKERNEL  = ../arm/zswap.c
++
++SGEMVNKERNEL = ../arm/gemv_n.c
++DGEMVNKERNEL = ../arm/gemv_n.c
++CGEMVNKERNEL = ../arm/zgemv_n.c
++ZGEMVNKERNEL = ../arm/zgemv_n.c
++
++SGEMVTKERNEL = ../arm/gemv_t.c
++DGEMVTKERNEL = ../arm/gemv_t.c
++CGEMVTKERNEL = ../arm/zgemv_t.c
++ZGEMVTKERNEL = ../arm/zgemv_t.c
++
++STRMMKERNEL	= ../generic/trmmkernel_2x2.c
++DTRMMKERNEL	= trmm8x4V.S
++CTRMMKERNEL	= ../generic/ztrmmkernel_2x2.c
++ZTRMMKERNEL	= ../generic/ztrmmkernel_2x2.c
++
++SGEMMKERNEL    =  ../generic/gemmkernel_2x2.c
++SGEMMONCOPY    =  ../generic/gemm_ncopy_2.c
++SGEMMOTCOPY    =  ../generic/gemm_tcopy_2.c
++SGEMMONCOPYOBJ =  sgemm_oncopy.o
++SGEMMOTCOPYOBJ =  sgemm_otcopy.o
++
++
++ 
++DGEMMKERNEL    =  gemm8x4V.S
++DGEMMINCOPY    = ../generic/gemm_ncopy_8.c
++DGEMMITCOPY    = ../generic/gemm_tcopy_8.c
++DGEMMONCOPY    = ../generic/gemm_ncopy_4.c
++DGEMMOTCOPY    = ../generic/gemm_tcopy_4.c
++DGEMMINCOPYOBJ = dgemm_incopy.o
++DGEMMITCOPYOBJ = dgemm_itcopy.o
++DGEMMONCOPYOBJ = dgemm_oncopy.o
++DGEMMOTCOPYOBJ = dgemm_otcopy.o
++
++CGEMMKERNEL    = ../generic/zgemmkernel_2x2.c
++CGEMMONCOPY    = ../generic/zgemm_ncopy_2.c
++CGEMMOTCOPY    = ../generic/zgemm_tcopy_2.c
++CGEMMONCOPYOBJ =  cgemm_oncopy.o
++CGEMMOTCOPYOBJ =  cgemm_otcopy.o
++
++ZGEMMKERNEL    = ../generic/zgemmkernel_2x2.c
++ZGEMMONCOPY    = ../generic/zgemm_ncopy_2.c
++ZGEMMOTCOPY    = ../generic/zgemm_tcopy_2.c
++ZGEMMONCOPYOBJ =  zgemm_oncopy.o
++ZGEMMOTCOPYOBJ =  zgemm_otcopy.o
++
++STRSMKERNEL_LN	=  ../generic/trsm_kernel_LN.c
++STRSMKERNEL_LT	=  ../generic/trsm_kernel_LT.c
++STRSMKERNEL_RN	=  ../generic/trsm_kernel_RN.c
++STRSMKERNEL_RT	=  ../generic/trsm_kernel_RT.c
++
++DTRSMKERNEL_LN	= ../generic/trsm_kernel_LN.c
++DTRSMKERNEL_LT	= ../generic/trsm_kernel_LT.c
++DTRSMKERNEL_RN	= ../generic/trsm_kernel_RN.c
++DTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
++
++CTRSMKERNEL_LN	= ../generic/trsm_kernel_LN.c
++CTRSMKERNEL_LT	= ../generic/trsm_kernel_LT.c
++CTRSMKERNEL_RN	= ../generic/trsm_kernel_RN.c
++CTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
++
++ZTRSMKERNEL_LN	= ../generic/trsm_kernel_LN.c
++ZTRSMKERNEL_LT	= ../generic/trsm_kernel_LT.c
++ZTRSMKERNEL_RN	= ../generic/trsm_kernel_RN.c
++ZTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
++
++
++
++
++
+diff --git a/kernel/zarch/KERNEL.ZARCH_GENERIC b/kernel/zarch/KERNEL.ZARCH_GENERIC
+index 27157dad..d80f84e7 100644
+--- a/kernel/zarch/KERNEL.ZARCH_GENERIC
++++ b/kernel/zarch/KERNEL.ZARCH_GENERIC
+@@ -131,4 +131,3 @@ ZTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
+ 
+ 
+ 
+-
+diff --git a/kernel/zarch/gemm8x4V.S b/kernel/zarch/gemm8x4V.S
+new file mode 100644
+index 00000000..0b4bc73c
+--- /dev/null
++++ b/kernel/zarch/gemm8x4V.S
+@@ -0,0 +1,615 @@
++/***************************************************************************
++Copyright (c) 2013-2017, The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++
++/**************************************************************************************
++* 2017/01/01 AbdelRauf (quickwritereader@gmail.com)
++* 	 BLASTEST 		: OK
++* 	 CTEST			: OK
++* 	 TEST			: OK
++**************************************************************************************/
++
++/*********************************************************************/
++/* Copyright 2009, 2010 The University of Texas at Austin.           */
++/* All rights reserved.                                              */
++/*                                                                   */
++/* Redistribution and use in source and binary forms, with or        */
++/* without modification, are permitted provided that the following   */
++/* conditions are met:                                               */
++/*                                                                   */
++/*   1. Redistributions of source code must retain the above         */
++/*      copyright notice, this list of conditions and the following  */
++/*      disclaimer.                                                  */
++/*                                                                   */
++/*   2. Redistributions in binary form must reproduce the above      */
++/*      copyright notice, this list of conditions and the following  */
++/*      disclaimer in the documentation and/or other materials       */
++/*      provided with the distribution.                              */
++/*                                                                   */
++/*    THIS  SOFTWARE IS PROVIDED  BY THE  UNIVERSITY OF  TEXAS AT    */
++/*    AUSTIN  ``AS IS''  AND ANY  EXPRESS OR  IMPLIED WARRANTIES,    */
++/*    INCLUDING, BUT  NOT LIMITED  TO, THE IMPLIED  WARRANTIES OF    */
++/*    MERCHANTABILITY  AND FITNESS FOR  A PARTICULAR  PURPOSE ARE    */
++/*    DISCLAIMED.  IN  NO EVENT SHALL THE UNIVERSITY  OF TEXAS AT    */
++/*    AUSTIN OR CONTRIBUTORS BE  LIABLE FOR ANY DIRECT, INDIRECT,    */
++/*    INCIDENTAL,  SPECIAL, EXEMPLARY,  OR  CONSEQUENTIAL DAMAGES    */
++/*    (INCLUDING, BUT  NOT LIMITED TO,  PROCUREMENT OF SUBSTITUTE    */
++/*    GOODS  OR  SERVICES; LOSS  OF  USE,  DATA,  OR PROFITS;  OR    */
++/*    BUSINESS INTERRUPTION) HOWEVER CAUSED  AND ON ANY THEORY OF    */
++/*    LIABILITY, WHETHER  IN CONTRACT, STRICT  LIABILITY, OR TORT    */
++/*    (INCLUDING NEGLIGENCE OR OTHERWISE)  ARISING IN ANY WAY OUT    */
++/*    OF  THE  USE OF  THIS  SOFTWARE,  EVEN  IF ADVISED  OF  THE    */
++/*    POSSIBILITY OF SUCH DAMAGE.                                    */
++/*                                                                   */
++/* The views and conclusions contained in the software and           */
++/* documentation are those of the authors and should not be          */
++/* interpreted as representing official policies, either expressed   */
++/* or implied, of The University of Texas at Austin.                 */
++/*********************************************************************/
++
++#define ASSEMBLER
++#include "common.h"
++
++/************** Notes ON IBM abi and IBM assembly**********************************************
++* General registers r0 and r1 should be used internally whenever possible
++* General registers r2 to r5 should be second choice
++* General registers r12 to r15 should only be used for their standard function.
++* r0 should not be used as address disp register
++ 
++#BLASLONG bm,BLASLONG bn,BLASLONG bk,FLOAT alpha,FLOAT* ba,FLOAT* bb,FLOAT* C,BLASLONG ldc
++ ##bm=r2,bn=r3, bk=r4, alpha=f0,ba=r5,bb=r6,stack[160] ,ldc=stack[168]  
++**********************************************************************************************/
++ 
++
++#define BM           %r2
++#define BM_CUR       %r0
++#define BN           %r3
++#define BN_CUR       %r10 
++#define BK           %r4 
++#define LDC_BYTE     %r8 
++#define   ALPHA      %f0
++#define ALPHA_VECT   %v0 
++#define  LOCAL_VAR1  %r9
++#define LOCAL_VAR2   %r1
++#define LOCAL_VAR3   %r11
++#define A            %r5
++#define B            %r6
++#define CIJ          %r7
++#define CIJ_LOCAL    %r12
++#define ALIGN_4   .align 16
++#define ALIGN_2   .align 8
++#define PREFETCH_INS 1
++
++#include "kernelMacros.S"
++
++/***********************************DGEMM***********************************************************/
++
++PROLOGUE
++ 
++stmg %r6,%r12,40(%r15)   
++lg CIJ, 160(%r15)
++lg LOCAL_VAR1, 168(%r15)
++srlg BN_CUR,BN,2  
++vrepg ALPHA_VECT,ALPHA_VECT,0 /*replicate alpha which in f0*/
++sllg LDC_BYTE, LOCAL_VAR1,3  /*calculate lcd stride with bytes double=8 x<<3 */
++cijle BN_CUR,0,.LX2 
++
++ALIGN_4
++.LX4_BN:
++#if defined(PREFETCH_INS)
++        pfd 1, 0(A)
++        pfd 1, 256(A)   
++        pfd 1, 0(B) 
++        pfd 1, 256(B)  
++#endif
++srlg BM_CUR,BM,3  
++lgr LOCAL_VAR3,A 
++lgr CIJ_LOCAL,CIJ
++cijle BM_CUR,0,.L4x4
++
++ALIGN_4
++.L8x4_BM: /*BM_CUR  LOOP */
++
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++ZERO_CVEC_8x4  
++cijle LOCAL_VAR1,0,.L8x4_mod
++
++ALIGN_4
++.L8x4_4_BK: /*BK_CUR LOOP */
++#if defined(PREFETCH_INS)
++        pfd 1, 512(LOCAL_VAR3)   
++#endif
++      CALC_8x4_4 LOCAL_VAR3,LOCAL_VAR2  
++#if defined(PREFETCH_INS)
++        pfd 1, 512(LOCAL_VAR2)  
++#endif 
++brctg LOCAL_VAR1,.L8x4_4_BK
++
++ALIGN_4
++.L8x4_mod:
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++jz .L8x4_BK_Store
++
++ALIGN_4
++.L8x4_BK: /*BK_CUR LOOP */
++      CALC_8x4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L8x4_BK
++
++ALIGN_4
++.L8x4_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_8x4 ALPHA_VECT,CIJ_LOCAL, LDC_BYTE
++ 
++brctg BM_CUR,.L8x4_BM 
++ 
++ALIGN_4
++.L4x4:
++  
++tmll BM,4   
++jz .L2x4
++ 
++ALIGN_4
++.L4x4_BM: /*BM start*/
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++ZERO_CVEC_4x4  
++cijle LOCAL_VAR1,0,.L4x4_mod
++
++ALIGN_4
++.L4x4_4_BK: /*BK_CUR LOOP */
++      CALC_4x4_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L4x4_4_BK
++
++ALIGN_4
++.L4x4_mod:
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++jz .L4x4_BK_Store
++
++ALIGN_4
++.L4x4_BK: /*BK_CUR LOOP */
++      CALC_4x4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L4x4_BK
++
++ALIGN_4
++.L4x4_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_4x4 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++ 
++ALIGN_2
++.L2x4:
++ 
++tmll BM,2  
++jz .L1x4
++ 
++ALIGN_4
++.L2x4_BM: /*BM start*/
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++ZERO_CVEC_2x4  
++cijle LOCAL_VAR1,0,.L2x4_mod
++
++ALIGN_4
++.L2x4_4_BK: /*BK_CUR LOOP */
++      CALC_2x4_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L2x4_4_BK
++
++ALIGN_4
++.L2x4_mod:
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++jz .L2x4_BK_Store
++
++ALIGN_4
++.L2x4_BK: /*BK_CUR LOOP */
++      CALC_2x4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L2x4_BK
++
++ALIGN_4
++.L2x4_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_2x4 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++
++
++ALIGN_4
++.L1x4:
++ 
++tmll BM,1  
++jz .Lx4_INNER_END
++ 
++ALIGN_4
++.L1x4_BM: /*BM start*/
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++ZERO_CVEC_1x4  
++cijle LOCAL_VAR1,0,.L1x4_mod
++
++ALIGN_4
++.L1x4_4_BK: /*BK_CUR LOOP */
++      CALC_1x4_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L1x4_4_BK
++
++ALIGN_4
++.L1x4_mod:
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++jz .L1x4_BK_Store
++
++ALIGN_4
++.L1x4_BK: /*BK_CUR LOOP */
++      CALC_1x4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L1x4_BK
++
++ALIGN_4
++.L1x4_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_1x4 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++
++ALIGN_2
++.Lx4_INNER_END:
++
++/*add LDC_BYTE_COPY to new*/
++sllg LOCAL_VAR1,LDC_BYTE,2  /*multiply*4 */
++sllg LOCAL_VAR2,BK,5  /*muyliply*4*sizeof(double)  =multiply*32* 2**5 */
++la CIJ,0(CIJ,LOCAL_VAR1)  /*refresh CIJ=CIJ+LDC_BYTE*4*/ 
++la B,0(B,LOCAL_VAR2)      /*refresh B=B+Bk*4*sizeof(double)  */
++
++brctg BN_CUR,.LX4_BN
++
++/*********************************X2 SECTION************************************************/
++ALIGN_4
++.LX2:
++tmll BN,2 
++jz .Lx1
++
++ALIGN_4
++.Lx2_BN:
++srlg BM_CUR,BM,3  
++lgr LOCAL_VAR3,A
++lgr CIJ_LOCAL,CIJ
++cijle BM_CUR,0,.L4x2
++
++
++ALIGN_4
++.L8x2_BM: /*BM_CUR  LOOP */
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++ZERO_CVEC_8x2  
++cijle LOCAL_VAR1,0,.L8x2_mod
++
++ALIGN_4
++.L8x2_4_BK: /*BK_CUR LOOP */
++#if defined(PREFETCH_INS)
++        pfd 1, 256(LOCAL_VAR3)  
++        pfd 1,64(LOCAL_VAR2) 
++#endif
++      CALC_8x2_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L8x2_4_BK
++
++ALIGN_4
++.L8x2_mod:
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++jz .L8x2_BK_Store
++
++ALIGN_4
++.L8x2_BK: /*BK_CUR LOOP */
++      CALC_8x2 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L8x2_BK
++
++ALIGN_4
++.L8x2_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_8x2 ALPHA_VECT,CIJ_LOCAL, LDC_BYTE
++ 
++ALIGN_4
++brctg BM_CUR,.L8x2_BM 
++ 
++ALIGN_2
++.L4x2:
++ 
++tmll BM,4 
++jz .L2x2
++ 
++ALIGN_4
++.L4x2_BM: /*BM start*/
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++ZERO_CVEC_4x2  
++cijle LOCAL_VAR1,0,.L4x2_mod
++
++ALIGN_4
++.L4x2_4_BK: /*BK_CUR LOOP */
++      CALC_4x2_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L4x2_4_BK
++
++ALIGN_4
++.L4x2_mod:
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++jz .L4x2_BK_Store
++
++ALIGN_4
++.L4x2_BK: /*BK_CUR LOOP */
++      CALC_4x2 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L4x2_BK
++
++ALIGN_4
++.L4x2_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_4x2 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++ 
++ALIGN_2
++.L2x2:
++
++tmll BM,2   
++jz .L1x2
++ 
++ALIGN_4
++.L2x2_BM: /*BM start*/
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++ZERO_CVEC_2x2  
++cijle LOCAL_VAR1,0,.L2x2_mod
++
++ALIGN_4
++.L2x2_4_BK: /*BK_CUR LOOP */
++      CALC_2x2_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L2x2_4_BK
++
++ALIGN_4
++.L2x2_mod:
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++jz .L2x2_BK_Store
++
++ALIGN_4
++.L2x2_BK: /*BK_CUR LOOP */
++      CALC_2x2 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L2x2_BK
++
++ALIGN_4
++.L2x2_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_2x2 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++
++
++ALIGN_2
++.L1x2:
++ 
++tmll BM,1  
++jz .Lx2_INNER_END
++ 
++ALIGN_4
++.L1x2_BM: /*BM start*/
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++ZERO_CVEC_1x2  
++cijle LOCAL_VAR1,0,.L1x2_mod
++
++ALIGN_4
++.L1x2_4_BK: /*BK_CUR LOOP */
++      CALC_1x2_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L1x2_4_BK
++
++ALIGN_4
++.L1x2_mod:
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++jz .L1x2_BK_Store
++
++ALIGN_4
++.L1x2_BK: /*BK_CUR LOOP */
++      CALC_1x2 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L1x2_BK
++
++ALIGN_4
++.L1x2_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_1x2 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++
++ALIGN_2
++.Lx2_INNER_END: 
++/*add LDC_BYTE_COPY to new*/
++la LOCAL_VAR1,0(LDC_BYTE,LDC_BYTE)   /*multiply*2 */
++sllg LOCAL_VAR2,BK,4  /*muyliply*2*sizeof(double)  =multiply*16* 2**4 */
++la CIJ,0(CIJ,LOCAL_VAR1)  /*refresh CIJ=CIJ+LDC_BYTE*4*/ 
++la B,0(B,LOCAL_VAR2)      /*refresh B=B+Bk*4*sizeof(double)  */
++
++ 
++ 
++
++/*********************************X1 SECTION************************************************/
++ALIGN_2
++.Lx1:
++tmll BN,1  
++jz .L_FUNC_END
++
++ALIGN_4
++.Lx1_BN:
++srlg BM_CUR,BM,3  
++lgr LOCAL_VAR3,A
++lgr CIJ_LOCAL,CIJ
++cijle BM_CUR,0,.L4x1
++
++
++ALIGN_4
++.L8x1_BM: /*BM_CUR  LOOP */
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++ZERO_CVEC_8x1  
++cijle LOCAL_VAR1,0,.L8x1_mod
++
++ALIGN_4
++.L8x1_4_BK: /*BK_CUR LOOP */
++#if defined(PREFETCH_INS)
++        pfd 1, 256(LOCAL_VAR3)
++#endif  
++      CALC_8x1_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L8x1_4_BK
++
++ALIGN_4
++.L8x1_mod:
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++jz .L8x1_BK_Store
++
++ALIGN_4
++.L8x1_BK: /*BK_CUR LOOP */
++      CALC_8x1 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L8x1_BK
++
++ALIGN_4
++.L8x1_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_8x1 ALPHA_VECT,CIJ_LOCAL, LDC_BYTE
++ 
++ALIGN_4
++brctg BM_CUR,.L8x1_BM 
++ 
++ALIGN_2
++.L4x1:
++ 
++tmll BM,4  
++jz .L2x1
++ 
++ALIGN_4
++.L4x1_BM: /*BM start*/
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++ZERO_CVEC_4x1  
++cijle LOCAL_VAR1,0,.L4x1_mod
++
++ALIGN_4
++.L4x1_4_BK: /*BK_CUR LOOP */
++      CALC_4x1_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L4x1_4_BK
++
++ALIGN_4
++.L4x1_mod:
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++jz .L4x1_BK_Store
++
++ALIGN_4
++.L4x1_BK: /*BK_CUR LOOP */
++      CALC_4x1 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L4x1_BK
++
++ALIGN_4
++.L4x1_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_4x1 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++ 
++ALIGN_2
++.L2x1:
++
++tmll BM,2   
++jz .L1x1
++ 
++ALIGN_4
++.L2x1_BM: /*BM start*/
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++ZERO_CVEC_2x1  
++cijle LOCAL_VAR1,0,.L2x1_mod
++
++ALIGN_4
++.L2x1_4_BK: /*BK_CUR LOOP */
++      CALC_2x1_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L2x1_4_BK
++
++ALIGN_4
++.L2x1_mod:
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++jz .L2x1_BK_Store
++
++ALIGN_4
++.L2x1_BK: /*BK_CUR LOOP */
++      CALC_2x1 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L2x1_BK
++
++ALIGN_4
++.L2x1_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_2x1 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++
++
++ALIGN_2
++.L1x1:
++ 
++tmll BM, 1   
++jz .Lx1_INNER_END
++ 
++ALIGN_4
++.L1x1_BM: /*BM start*/
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++ZERO_CVEC_1x1  
++cijle LOCAL_VAR1,0,.L1x1_mod
++
++ALIGN_4
++.L1x1_4_BK: /*BK_CUR LOOP */
++      CALC_1x1_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L1x1_4_BK
++
++ALIGN_4
++.L1x1_mod:
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++jz .L1x1_BK_Store
++
++ALIGN_4
++.L1x1_BK: /*BK_CUR LOOP */
++      CALC_1x1 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L1x1_BK
++
++ALIGN_4
++.L1x1_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_1x1 ALPHA ,CIJ_LOCAL, LDC_BYTE
++
++ALIGN_2
++.Lx1_INNER_END: 
++/*add LDC_BYTE_COPY to new*/ 
++sllg LOCAL_VAR2,BK,3  /*muyliply*2*sizeof(double)  =multiply*8* 2**3 */
++la CIJ,0(CIJ,LDC_BYTE)  /*refresh CIJ=CIJ+LDC_BYTE */ 
++la B,0(B,LOCAL_VAR2)      /*refresh B=B+Bk*1*sizeof(double)  */
++ 
++
++ALIGN_2
++.L_FUNC_END:
++/*end*/
++lmg %r6,%r12,40(%r15) 
++br %r14
++.end
++
++
++
++
+diff --git a/kernel/zarch/kernelMacros.S b/kernel/zarch/kernelMacros.S
+new file mode 100644
+index 00000000..cac4cb3d
+--- /dev/null
++++ b/kernel/zarch/kernelMacros.S
+@@ -0,0 +1,1529 @@
++/*********************************KERNEL 8x4***********************************************/
++/*Zero C block Vectors*/
++.macro ZERO_CVEC_8x4
++    vzero  %v16  
++    vzero  %v17   
++    vzero  %v18   
++    vzero  %v19   
++    vzero  %v20   
++    vzero  %v21   
++    vzero  %v22   
++    vzero  %v23   
++    vzero  %v24   
++    vzero  %v25   
++    vzero  %v26   
++    vzero  %v27   
++    vzero  %v28   
++    vzero  %v29   
++    vzero  %v30   
++    vzero  %v31 
++.endm
++
++/*Calculate for 8x4 C blocks*/
++.macro CALC_8x4  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)  
++        vlrepg %v1,8(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)     
++        vl  %v3, 16(\PTR_A_REG)     
++        vl  %v4, 32(\PTR_A_REG)   
++        vl  %v5, 48(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18  
++        vfmadb    %v19,%v5,%v7,%v19     
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21 
++        vlrepg %v7,16(\PTR_B_REG)    
++        vfmadb    %v22,%v4,%v1,%v22  
++        vfmadb    %v23,%v5,%v1,%v23   
++        vlrepg %v1,24(\PTR_B_REG)     
++        vfmadb    %v24,%v2,%v7,%v24   
++        vfmadb    %v25,%v3,%v7,%v25   
++        vfmadb    %v26,%v4,%v7,%v26  
++        la \PTR_A_REG, 64(\PTR_A_REG)    
++        vfmadb    %v27,%v5,%v7,%v27        
++        vfmadb    %v28,%v2,%v1,%v28   
++        vfmadb    %v29,%v3,%v1,%v29   
++        la \PTR_B_REG, 32(\PTR_B_REG)    
++        vfmadb    %v30,%v4,%v1,%v30  
++        vfmadb    %v31,%v5,%v1,%v31  
++.endm
++ 
++/*Calculate for 8x4_4 C blocks*/
++.macro CALC_8x4_4  PTR_A_REG,PTR_B_REG 
++        vlrepg %v7, 0(\PTR_B_REG)  
++        vlrepg %v1,8(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)     
++        vl  %v3, 16(\PTR_A_REG)     
++        vl  %v4, 32(\PTR_A_REG)   
++        vl  %v5, 48(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18  
++        vfmadb    %v19,%v5,%v7,%v19     
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21 
++        vlrepg %v7,16(\PTR_B_REG)    
++        vfmadb    %v22,%v4,%v1,%v22  
++        vfmadb    %v23,%v5,%v1,%v23   
++        vlrepg %v1,24(\PTR_B_REG)     
++        vfmadb    %v24,%v2,%v7,%v24   
++        vfmadb    %v25,%v3,%v7,%v25   
++        vfmadb    %v26,%v4,%v7,%v26      
++        vfmadb    %v27,%v5,%v7,%v27        
++        vfmadb    %v28,%v2,%v1,%v28   
++        vfmadb    %v29,%v3,%v1,%v29      
++        vfmadb    %v30,%v4,%v1,%v30  
++        vfmadb    %v31,%v5,%v1,%v31  
++
++        vlrepg %v7, 32(\PTR_B_REG)  
++        vlrepg %v1,40(\PTR_B_REG)    
++        vl  %v2, 64(\PTR_A_REG)     
++        vl  %v3, 80(\PTR_A_REG)     
++        vl  %v4, 96(\PTR_A_REG)   
++        vl  %v5, 112(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18  
++        vfmadb    %v19,%v5,%v7,%v19     
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21 
++        vlrepg %v7,48(\PTR_B_REG)    
++        vfmadb    %v22,%v4,%v1,%v22  
++        vfmadb    %v23,%v5,%v1,%v23   
++        vlrepg %v1,56(\PTR_B_REG)     
++        vfmadb    %v24,%v2,%v7,%v24   
++        vfmadb    %v25,%v3,%v7,%v25   
++        vfmadb    %v26,%v4,%v7,%v26      
++        vfmadb    %v27,%v5,%v7,%v27        
++        vfmadb    %v28,%v2,%v1,%v28   
++        vfmadb    %v29,%v3,%v1,%v29      
++        vfmadb    %v30,%v4,%v1,%v30  
++        vfmadb    %v31,%v5,%v1,%v31  
++
++        vlrepg %v7, 64(\PTR_B_REG)  
++        vlrepg %v1,72(\PTR_B_REG)    
++        vl  %v2, 128(\PTR_A_REG)     
++        vl  %v3, 144(\PTR_A_REG)     
++        vl  %v4, 160(\PTR_A_REG)   
++        vl  %v5, 176(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18  
++        vfmadb    %v19,%v5,%v7,%v19     
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21 
++        vlrepg %v7,80(\PTR_B_REG)    
++        vfmadb    %v22,%v4,%v1,%v22  
++        vfmadb    %v23,%v5,%v1,%v23   
++        vlrepg %v1,88(\PTR_B_REG)     
++        vfmadb    %v24,%v2,%v7,%v24   
++        vfmadb    %v25,%v3,%v7,%v25   
++        vfmadb    %v26,%v4,%v7,%v26      
++        vfmadb    %v27,%v5,%v7,%v27        
++        vfmadb    %v28,%v2,%v1,%v28   
++        vfmadb    %v29,%v3,%v1,%v29      
++        vfmadb    %v30,%v4,%v1,%v30  
++        vfmadb    %v31,%v5,%v1,%v31  
++
++        vlrepg %v7, 96(\PTR_B_REG)  
++        vlrepg %v1,104(\PTR_B_REG)    
++        vl  %v2, 192(\PTR_A_REG)     
++        vl  %v3, 208(\PTR_A_REG)     
++        vl  %v4, 224(\PTR_A_REG)   
++        vl  %v5, 240(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18  
++        vfmadb    %v19,%v5,%v7,%v19     
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21 
++        vlrepg %v7,112(\PTR_B_REG)    
++        vfmadb    %v22,%v4,%v1,%v22  
++        vfmadb    %v23,%v5,%v1,%v23   
++        vlrepg %v1,120(\PTR_B_REG)     
++        vfmadb    %v24,%v2,%v7,%v24   
++        vfmadb    %v25,%v3,%v7,%v25   
++        vfmadb    %v26,%v4,%v7,%v26      
++        vfmadb    %v27,%v5,%v7,%v27   
++        la \PTR_B_REG, 128(\PTR_B_REG) 
++        vfmadb    %v28,%v2,%v1,%v28   
++        vfmadb    %v29,%v3,%v1,%v29      
++        vfmadb    %v30,%v4,%v1,%v30   
++        la \PTR_A_REG, 256(\PTR_A_REG)  
++        vfmadb    %v31,%v5,%v1,%v31  
++
++.endm
++ 
++
++/*STORE C8X4*/
++.macro STORE_8x4  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++   
++    /*add LDC_BYTE_reg=LDC_BYTE_original<<1 */  
++    la LOCAL_VAR1,0(\LDC_BYTE_ORIGINAL, \LDC_BYTE_ORIGINAL)
++    vl %v1,0(\CIJ_REG)
++    vfmadb    %v1,%v16,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG)
++      
++    vl %v2,16(\CIJ_REG)
++    vfmadb    %v2,%v17,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG)
++
++    vl %v3,32(\CIJ_REG)
++    vfmadb    %v3,%v18,\ALPHA_VECREG,%v3 
++    vst %v3,32(\CIJ_REG)
++
++    vl %v4,48(\CIJ_REG)
++    vfmadb    %v4,%v19,\ALPHA_VECREG,%v4 
++    vst %v4,48(\CIJ_REG)
++    
++    la LOCAL_VAR2,0(LOCAL_VAR1,\LDC_BYTE_ORIGINAL )
++    
++
++    /*add c LDC_BYTE*/
++    vl %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmadb    %v1,%v20,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++
++    vl %v2,16(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmadb    %v2,%v21,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++ 
++
++    vl %v3,32(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmadb    %v3,%v22,\ALPHA_VECREG,%v3 
++    vst %v3,32(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++
++    vl %v4,48(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmadb    %v4,%v23,\ALPHA_VECREG,%v4 
++    vst %v4,48(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++
++
++    vl %v1,0(\CIJ_REG,LOCAL_VAR1)
++    vfmadb    %v1,%v24,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG,LOCAL_VAR1)
++
++    vl %v2,16(\CIJ_REG,LOCAL_VAR1)
++    vfmadb    %v2,%v25,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG,LOCAL_VAR1)
++
++    vl %v3,32(\CIJ_REG,LOCAL_VAR1)
++    vfmadb    %v3,%v26,\ALPHA_VECREG,%v3
++    vst %v3,32(\CIJ_REG,LOCAL_VAR1)
++
++    vl %v4,48(\CIJ_REG,LOCAL_VAR1)
++    vfmadb    %v4,%v27,\ALPHA_VECREG,%v4 
++    vst %v4,48(\CIJ_REG,LOCAL_VAR1)
++
++    
++    vl %v1,0(\CIJ_REG,LOCAL_VAR2)
++    vfmadb    %v1,%v28,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG,LOCAL_VAR2)
++
++    vl %v2,16(\CIJ_REG,LOCAL_VAR2)
++    vfmadb    %v2,%v29,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG,LOCAL_VAR2)
++
++    vl %v3,32(\CIJ_REG,LOCAL_VAR2)
++    vfmadb    %v3,%v30,\ALPHA_VECREG,%v3 
++    vst %v3,32(\CIJ_REG,LOCAL_VAR2)
++
++    vl %v4,48(\CIJ_REG,LOCAL_VAR2)
++    vfmadb    %v4,%v31,\ALPHA_VECREG,%v4
++    vst %v4,48(\CIJ_REG,LOCAL_VAR2)
++
++   la \CIJ_REG,64(\CIJ_REG)
++ 
++.endm
++
++/*STORE TRMM C8X4*/
++.macro STORE_TRMM_8x4  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++   
++    /*add LDC_BYTE_reg=LDC_BYTE_original<<1 */  
++    la LOCAL_VAR1,0(\LDC_BYTE_ORIGINAL, \LDC_BYTE_ORIGINAL)
++    vfmdb    %v1,%v16,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG)
++      
++    vfmdb    %v2,%v17,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG)
++    vfmdb    %v3,%v18,\ALPHA_VECREG
++    vst %v3,32(\CIJ_REG)
++    vfmdb    %v4,%v19,\ALPHA_VECREG
++    vst %v4,48(\CIJ_REG)
++    
++    la LOCAL_VAR2,0(LOCAL_VAR1,\LDC_BYTE_ORIGINAL )
++    
++    /*add c LDC_BYTE*/
++    vfmdb    %v1,%v20,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmdb    %v2,%v21,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++ 
++    vfmdb    %v3,%v22,\ALPHA_VECREG
++    vst %v3,32(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmdb    %v4,%v23,\ALPHA_VECREG
++    vst %v4,48(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++
++    vfmdb    %v1,%v24,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG,LOCAL_VAR1)
++    vfmdb    %v2,%v25,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG,LOCAL_VAR1)
++    vfmdb    %v3,%v26,\ALPHA_VECREG
++    vst %v3,32(\CIJ_REG,LOCAL_VAR1)
++    vfmdb    %v4,%v27,\ALPHA_VECREG
++    vst %v4,48(\CIJ_REG,LOCAL_VAR1)
++    
++    vfmdb    %v1,%v28,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG,LOCAL_VAR2)
++    vfmdb    %v2,%v29,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG,LOCAL_VAR2)
++    vfmdb    %v3,%v30,\ALPHA_VECREG
++    vst %v3,32(\CIJ_REG,LOCAL_VAR2)
++    vfmdb    %v4,%v31,\ALPHA_VECREG
++    vst %v4,48(\CIJ_REG,LOCAL_VAR2)
++   la \CIJ_REG,64(\CIJ_REG)
++ 
++.endm
++/**************************************Kernel4x4*************************************************/
++
++/*Zero C block Vectors*/
++.macro ZERO_CVEC_4x4
++    vzero  %v16  
++    vzero  %v17    
++    vzero  %v20   
++    vzero  %v21    
++    vzero  %v24   
++    vzero  %v25     
++    vzero  %v28   
++    vzero  %v29   
++.endm
++
++/*Calculate for 4x4 C blocks*/
++.macro CALC_4x4  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)  
++        vlrepg %v1,8(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)     
++        vl  %v3, 16(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17       
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21 
++        vlrepg %v7,16(\PTR_B_REG)      
++        vlrepg %v1,24(\PTR_B_REG)     
++        vfmadb    %v24,%v2,%v7,%v24   
++        vfmadb    %v25,%v3,%v7,%v25    
++        la \PTR_A_REG, 32(\PTR_A_REG)         
++        vfmadb    %v28,%v2,%v1,%v28   
++        vfmadb    %v29,%v3,%v1,%v29   
++        la \PTR_B_REG, 32(\PTR_B_REG)   
++.endm
++ 
++.macro CALC_4x4_4  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)  
++        vlrepg %v1,8(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)     
++        vl  %v3, 16(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17       
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21 
++        vlrepg %v7,16(\PTR_B_REG)      
++        vlrepg %v1,24(\PTR_B_REG)     
++        vfmadb    %v24,%v2,%v7,%v24   
++        vfmadb    %v25,%v3,%v7,%v25            
++        vfmadb    %v28,%v2,%v1,%v28   
++        vfmadb    %v29,%v3,%v1,%v29    
++
++        vlrepg %v7, 32(\PTR_B_REG)  
++        vlrepg %v1,40(\PTR_B_REG)    
++        vl  %v2, 32(\PTR_A_REG)     
++        vl  %v3, 48(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17       
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21 
++        vlrepg %v7,48(\PTR_B_REG)      
++        vlrepg %v1,56(\PTR_B_REG)     
++        vfmadb    %v24,%v2,%v7,%v24   
++        vfmadb    %v25,%v3,%v7,%v25            
++        vfmadb    %v28,%v2,%v1,%v28   
++        vfmadb    %v29,%v3,%v1,%v29  
++
++        vlrepg %v7, 64(\PTR_B_REG)  
++        vlrepg %v1,72(\PTR_B_REG)    
++        vl  %v2, 64(\PTR_A_REG)     
++        vl  %v3, 80(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17       
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21 
++        vlrepg %v7,80(\PTR_B_REG)      
++        vlrepg %v1,88(\PTR_B_REG)     
++        vfmadb    %v24,%v2,%v7,%v24   
++        vfmadb    %v25,%v3,%v7,%v25            
++        vfmadb    %v28,%v2,%v1,%v28   
++        vfmadb    %v29,%v3,%v1,%v29  
++
++        vlrepg %v7, 96(\PTR_B_REG)  
++        vlrepg %v1,104(\PTR_B_REG)    
++        vl  %v2, 96(\PTR_A_REG)     
++        vl  %v3, 112(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17       
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21 
++        vlrepg %v7,112(\PTR_B_REG)    
++        la \PTR_A_REG, 128(\PTR_A_REG)    
++        vlrepg %v1,120(\PTR_B_REG)      
++        vfmadb    %v24,%v2,%v7,%v24   
++        vfmadb    %v25,%v3,%v7,%v25  
++        vfmadb    %v28,%v2,%v1,%v28   
++        la \PTR_B_REG, 128(\PTR_B_REG) 
++        vfmadb    %v29,%v3,%v1,%v29   
++.endm
++
++/*STORE C4X4*/
++.macro STORE_4x4  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++   
++    /*add LDC_BYTE_reg=LDC_BYTE_original<<1 */  
++    la LOCAL_VAR1,0(\LDC_BYTE_ORIGINAL, \LDC_BYTE_ORIGINAL)
++    vl %v1,0(\CIJ_REG)
++    vfmadb    %v1,%v16,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG)
++      
++    vl %v2,16(\CIJ_REG)
++    vfmadb    %v2,%v17,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG)
++ 
++    
++    la LOCAL_VAR2,0(LOCAL_VAR1,\LDC_BYTE_ORIGINAL )
++    
++    /*add c LDC_BYTE*/
++    vl %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmadb    %v1,%v20,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++
++    vl %v2,16(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmadb    %v2,%v21,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++ 
++    vl %v1,0(\CIJ_REG,LOCAL_VAR1)
++    vfmadb    %v1,%v24,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG,LOCAL_VAR1)
++
++    vl %v2,16(\CIJ_REG,LOCAL_VAR1)
++    vfmadb    %v2,%v25,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG,LOCAL_VAR1)
++
++ 
++    vl %v1,0(\CIJ_REG,LOCAL_VAR2)
++    vfmadb    %v1,%v28,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG,LOCAL_VAR2)
++
++    vl %v2,16(\CIJ_REG,LOCAL_VAR2)
++    vfmadb    %v2,%v29,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG,LOCAL_VAR2) 
++
++   la \CIJ_REG,32(\CIJ_REG)
++.endm
++
++/*STORE TRMM C4X4*/
++.macro STORE_TRMM_4x4  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++    /*add LDC_BYTE_reg=LDC_BYTE_original<<1 */  
++    la LOCAL_VAR1,0(\LDC_BYTE_ORIGINAL, \LDC_BYTE_ORIGINAL)
++    vfmdb    %v1,%v16,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG)
++    vfmdb    %v2,%v17,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG)
++    la LOCAL_VAR2,0(LOCAL_VAR1,\LDC_BYTE_ORIGINAL )
++    vfmdb    %v1,%v20,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmdb    %v2,%v21,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmdb    %v1,%v24,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG,LOCAL_VAR1)
++    vfmdb    %v2,%v25,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG,LOCAL_VAR1)
++    vfmdb    %v1,%v28,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG,LOCAL_VAR2)
++    vfmdb    %v2,%v29,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG,LOCAL_VAR2) 
++   la \CIJ_REG,32(\CIJ_REG)
++.endm
++/**************************************Kernel2x4*************************************************/
++/*Zero C block Vectors*/
++.macro ZERO_CVEC_2x4
++    vzero  %v1  /*a1b1 a1b2 */
++    vzero  %v2  /*a1b3 a1b4 */
++    vzero  %v6  /*a2b1 a2b2 */
++    vzero  %v7  /*a2b3 a2b4 */ 
++.endm
++
++/*Calculate for 2x4_4 C blocks.This Time BroadCast A. but Load B multiple*/
++.macro CALC_2x4_4  PTR_A_REG,PTR_B_REG
++        vl %v4, 0(\PTR_B_REG)  
++        vl %v5,16(\PTR_B_REG)    
++        vlrepg  %v3, 0(\PTR_A_REG) 
++        vlrepg  %v16, 8(\PTR_A_REG)       
++        vfmadb    %v1,%v3,%v4,%v1  
++        vfmadb    %v2,%v3,%v5,%v2    
++        vfmadb    %v6,%v16,%v4,%v6  
++        vfmadb    %v7,%v16,%v5,%v7      
++
++        vl %v4, 32(\PTR_B_REG)  
++        vl %v5,48(\PTR_B_REG)    
++        vlrepg  %v3, 16(\PTR_A_REG) 
++        vlrepg  %v16, 24(\PTR_A_REG)       
++        vfmadb    %v1,%v3,%v4,%v1  
++        vfmadb    %v2,%v3,%v5,%v2    
++        vfmadb    %v6,%v16,%v4,%v6  
++        vfmadb    %v7,%v16,%v5,%v7 
++
++        vl %v4, 64(\PTR_B_REG)  
++        vl %v5,80(\PTR_B_REG)    
++        vlrepg  %v3, 32(\PTR_A_REG) 
++        vlrepg  %v16, 40(\PTR_A_REG)       
++        vfmadb    %v1,%v3,%v4,%v1  
++        vfmadb    %v2,%v3,%v5,%v2    
++        vfmadb    %v6,%v16,%v4,%v6  
++        vfmadb    %v7,%v16,%v5,%v7 
++
++        vl %v4, 96(\PTR_B_REG)  
++        vl %v5,112(\PTR_B_REG)    
++        vlrepg  %v3, 48(\PTR_A_REG) 
++        vlrepg  %v16, 56(\PTR_A_REG)       
++        vfmadb    %v1,%v3,%v4,%v1  
++        vfmadb    %v2,%v3,%v5,%v2  
++        la \PTR_B_REG, 128(\PTR_B_REG)    
++        vfmadb    %v6,%v16,%v4,%v6  
++        vfmadb    %v7,%v16,%v5,%v7    
++         la \PTR_A_REG, 64(\PTR_A_REG)    
++.endm
++
++/*Calculate for 2x4 C blocks.This Time BroadCast A. but Load B multiple*/
++.macro CALC_2x4  PTR_A_REG,PTR_B_REG
++        vl %v4, 0(\PTR_B_REG)  
++        vl %v5,16(\PTR_B_REG)    
++        vlrepg  %v3, 0(\PTR_A_REG) 
++        vlrepg  %v16, 8(\PTR_A_REG)       
++        vfmadb    %v1,%v3,%v4,%v1  
++        vfmadb    %v2,%v3,%v5,%v2   
++        la \PTR_A_REG, 16(\PTR_A_REG) 
++        vfmadb    %v6,%v16,%v4,%v6  
++        vfmadb    %v7,%v16,%v5,%v7      
++        la \PTR_B_REG, 32(\PTR_B_REG)    
++.endm
++
++.macro STORE_2x4  ALPHA_REG,CIJ_REG , LDC_BYTE_ORIGINAL
++/**/
++    vfmdb %v1,%v1,\ALPHA_REG
++    vfmdb %v2,%v2,\ALPHA_REG
++    vfmdb %v6,%v6,\ALPHA_REG
++    vfmdb %v7,%v7,\ALPHA_REG
++    vrepg %v4,%v1,1
++    vrepg %v5,%v6,1
++    la LOCAL_VAR1,0(\LDC_BYTE_ORIGINAL, \LDC_BYTE_ORIGINAL) 
++    adb %f1, 0(\CIJ_REG)
++    std %f1,0(\CIJ_REG)
++
++    adb %f6, 8(\CIJ_REG)
++    std %f6,8(\CIJ_REG)
++     
++    adb %f4,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    std %f4,0(\CIJ_REG,\LDC_BYTE_ORIGINAL) 
++    
++    adb %f5,8(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    std %f5,8(\CIJ_REG,\LDC_BYTE_ORIGINAL) 
++     
++      /*add LDC_BYTE */
++    la LOCAL_VAR2,0(LOCAL_VAR1,\LDC_BYTE_ORIGINAL )
++    vrepg %v4,%v2,1
++    vrepg %v5,%v7,1
++
++    adb %f2,0(\CIJ_REG,LOCAL_VAR1)
++    std %f2,0(\CIJ_REG,LOCAL_VAR1)
++    
++    adb %f7,8(\CIJ_REG,LOCAL_VAR1)
++    std %f7,8(\CIJ_REG,LOCAL_VAR1)
++
++    adb %f4,0(\CIJ_REG,LOCAL_VAR2)
++    std %f4,0(\CIJ_REG,LOCAL_VAR2)
++
++    adb %f5,8(\CIJ_REG,LOCAL_VAR2)
++    std %f5,8(\CIJ_REG,LOCAL_VAR2)
++    la \CIJ_REG,16(\CIJ_REG)
++
++.endm
++
++.macro STORE_TRMM_2x4  ALPHA_REG,CIJ_REG , LDC_BYTE_ORIGINAL
++/**/
++    vfmdb %v1,%v1,\ALPHA_REG
++    vfmdb %v2,%v2,\ALPHA_REG
++    vfmdb %v6,%v6,\ALPHA_REG
++    vfmdb %v7,%v7,\ALPHA_REG
++    vrepg %v4,%v1,1
++    vrepg %v5,%v6,1
++    la LOCAL_VAR1,0(\LDC_BYTE_ORIGINAL, \LDC_BYTE_ORIGINAL) 
++    std %f1,0(\CIJ_REG)
++    std %f6,8(\CIJ_REG)
++    std %f4,0(\CIJ_REG,\LDC_BYTE_ORIGINAL) 
++    std %f5,8(\CIJ_REG,\LDC_BYTE_ORIGINAL) 
++      /*add LDC_BYTE */
++    la LOCAL_VAR2,0(LOCAL_VAR1,\LDC_BYTE_ORIGINAL )
++    vrepg %v4,%v2,1
++    vrepg %v5,%v7,1
++    std %f2,0(\CIJ_REG,LOCAL_VAR1)
++    std %f7,8(\CIJ_REG,LOCAL_VAR1)
++    std %f4,0(\CIJ_REG,LOCAL_VAR2)
++    std %f5,8(\CIJ_REG,LOCAL_VAR2)
++    la \CIJ_REG,16(\CIJ_REG)
++.endm
++
++/**************************************Kernel1x4*************************************************/
++/*Zero C block Vectors*/
++.macro ZERO_CVEC_1x4
++    vzero  %v1  
++    vzero  %v2       
++.endm
++/*Calculate for 1x4 C blocks.This Time BroadCast A. but Load B multiple*/
++.macro CALC_1x4  PTR_A_REG,PTR_B_REG
++        vl %v4, 0(\PTR_B_REG)  
++        vl %v5,16(\PTR_B_REG)    
++        vlrepg  %v3, 0(\PTR_A_REG)         
++        vfmadb    %v1,%v3,%v4,%v1   
++        la \PTR_A_REG, 8(\PTR_A_REG)         
++        vfmadb    %v2,%v3,%v5,%v2        
++        la \PTR_B_REG, 32(\PTR_B_REG)    
++.endm
++
++/*Calculate for 1x4_4 C blocks.This Time BroadCast A. but Load B multiple*/
++.macro CALC_1x4_4  PTR_A_REG,PTR_B_REG
++        vl %v4, 0(\PTR_B_REG)  
++        vl %v5,16(\PTR_B_REG)    
++        vlrepg  %v3, 0(\PTR_A_REG)         
++        vfmadb    %v1,%v3,%v4,%v1           
++        vfmadb    %v2,%v3,%v5,%v2  
++
++        vl %v4, 32(\PTR_B_REG)  
++        vl %v5,48(\PTR_B_REG)    
++        vlrepg  %v3, 8(\PTR_A_REG)         
++        vfmadb    %v1,%v3,%v4,%v1           
++        vfmadb    %v2,%v3,%v5,%v2
++
++        vl %v4, 64(\PTR_B_REG)  
++        vl %v5,80(\PTR_B_REG)    
++        vlrepg  %v3, 16(\PTR_A_REG)         
++        vfmadb    %v1,%v3,%v4,%v1           
++        vfmadb    %v2,%v3,%v5,%v2
++
++        vl %v4, 96(\PTR_B_REG)  
++        vl %v5,112(\PTR_B_REG)    
++        vlrepg  %v3, 24(\PTR_A_REG)         
++        vfmadb    %v1,%v3,%v4,%v1           
++        vfmadb    %v2,%v3,%v5,%v2  
++        la \PTR_A_REG, 32(\PTR_A_REG)       
++        la \PTR_B_REG, 128(\PTR_B_REG)    
++.endm
++
++.macro STORE_1x4  ALPHA_REG,CIJ_REG , LDC_BYTE_ORIGINAL
++/**/
++    vfmdb %v1,%v1,\ALPHA_REG
++    vfmdb %v2,%v2,\ALPHA_REG
++    vrepg %v4,%v1,1
++    vrepg %v5,%v2,1
++    la LOCAL_VAR1,0(\LDC_BYTE_ORIGINAL, \LDC_BYTE_ORIGINAL) 
++    adb %f1, 0(\CIJ_REG)
++    std %f1,0(\CIJ_REG)
++     
++    adb %f4,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    std %f4,0(\CIJ_REG,\LDC_BYTE_ORIGINAL) 
++      /*add LDC_BYTE */
++    la LOCAL_VAR2,0(LOCAL_VAR1,\LDC_BYTE_ORIGINAL )
++    adb %f2,0(\CIJ_REG,LOCAL_VAR1)
++    std %f2,0(\CIJ_REG,LOCAL_VAR1)
++    adb %f5,0(\CIJ_REG,LOCAL_VAR2)
++    std %f5,0(\CIJ_REG,LOCAL_VAR2)
++    la \CIJ_REG,8(\CIJ_REG)
++
++.endm
++
++.macro STORE_TRMM_1x4  ALPHA_REG,CIJ_REG , LDC_BYTE_ORIGINAL
++/**/
++    vfmdb %v1,%v1,\ALPHA_REG
++    vfmdb %v2,%v2,\ALPHA_REG
++    vrepg %v4,%v1,1
++    vrepg %v5,%v2,1
++    la LOCAL_VAR1,0(\LDC_BYTE_ORIGINAL, \LDC_BYTE_ORIGINAL) 
++    std %f1,0(\CIJ_REG)
++    std %f4,0(\CIJ_REG,\LDC_BYTE_ORIGINAL) 
++      /*add LDC_BYTE */
++    la LOCAL_VAR2,0(LOCAL_VAR1,\LDC_BYTE_ORIGINAL )
++    std %f2,0(\CIJ_REG,LOCAL_VAR1)
++    std %f5,0(\CIJ_REG,LOCAL_VAR2)
++    la \CIJ_REG,8(\CIJ_REG)
++.endm
++/***************************************BN=2 SECTION***************************************/
++/*************************************Kernel8x2***************************************************/
++/*Zero C block Vectors*/
++.macro ZERO_CVEC_8x2
++    vzero  %v16  
++    vzero  %v17   
++    vzero  %v18   
++    vzero  %v19   
++    vzero  %v20   
++    vzero  %v21   
++    vzero  %v22   
++    vzero  %v23   
++     
++.endm
++
++/*Calculate for 8x2 C blocks*/
++.macro CALC_8x2  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)  
++        vlrepg %v1,8(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)     
++        vl  %v3, 16(\PTR_A_REG)     
++        vl  %v4, 32(\PTR_A_REG)   
++        vl  %v5, 48(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18  
++        vfmadb    %v19,%v5,%v7,%v19     
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21  
++        la \PTR_A_REG, 64(\PTR_A_REG)     
++        vfmadb    %v22,%v4,%v1,%v22  
++        vfmadb    %v23,%v5,%v1,%v23       
++        la \PTR_B_REG, 16(\PTR_B_REG)    
++.endm
++ 
++
++/*Calculate for 8x2_4 C blocks*/
++.macro CALC_8x2_4  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)  
++        vlrepg %v1,8(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)     
++        vl  %v3, 16(\PTR_A_REG)     
++        vl  %v4, 32(\PTR_A_REG)   
++        vl  %v5, 48(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18  
++        vfmadb    %v19,%v5,%v7,%v19     
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21       
++        vfmadb    %v22,%v4,%v1,%v22  
++        vfmadb    %v23,%v5,%v1,%v23    
++
++        vlrepg %v7, 16(\PTR_B_REG)  
++        vlrepg %v1,24(\PTR_B_REG)    
++        vl  %v2, 64(\PTR_A_REG)     
++        vl  %v3, 80(\PTR_A_REG)     
++        vl  %v4, 96(\PTR_A_REG)   
++        vl  %v5, 112(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18  
++        vfmadb    %v19,%v5,%v7,%v19     
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21       
++        vfmadb    %v22,%v4,%v1,%v22  
++        vfmadb    %v23,%v5,%v1,%v23 
++
++        vlrepg %v7, 32(\PTR_B_REG)  
++        vlrepg %v1,40(\PTR_B_REG)    
++        vl  %v2, 128(\PTR_A_REG)     
++        vl  %v3, 144(\PTR_A_REG)     
++        vl  %v4, 160(\PTR_A_REG)   
++        vl  %v5, 176(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18  
++        vfmadb    %v19,%v5,%v7,%v19     
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21       
++        vfmadb    %v22,%v4,%v1,%v22  
++        vfmadb    %v23,%v5,%v1,%v23 
++
++        vlrepg %v7, 48(\PTR_B_REG)  
++        vlrepg %v1,56(\PTR_B_REG)    
++        vl  %v2, 192(\PTR_A_REG)     
++        vl  %v3, 208(\PTR_A_REG)     
++        vl  %v4, 224(\PTR_A_REG)   
++        vl  %v5, 240(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18  
++        vfmadb    %v19,%v5,%v7,%v19   
++        la \PTR_B_REG, 64(\PTR_B_REG)  
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21       
++        vfmadb    %v22,%v4,%v1,%v22  
++        vfmadb    %v23,%v5,%v1,%v23 
++        la \PTR_A_REG, 256(\PTR_A_REG)
++.endm
++
++/*STORE C8X2*/
++.macro STORE_8x2  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++    
++    vl %v1,0(\CIJ_REG)
++    vfmadb    %v1,%v16,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG)
++      
++    vl %v2,16(\CIJ_REG)
++    vfmadb    %v2,%v17,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG)
++
++    vl %v3,32(\CIJ_REG)
++    vfmadb    %v3,%v18,\ALPHA_VECREG,%v3 
++    vst %v3,32(\CIJ_REG)
++
++    vl %v4,48(\CIJ_REG)
++    vfmadb    %v4,%v19,\ALPHA_VECREG,%v4 
++    vst %v4,48(\CIJ_REG)
++     
++ 
++    vl %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmadb    %v1,%v20,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++
++    vl %v2,16(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmadb    %v2,%v21,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++ 
++
++    vl %v3,32(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmadb    %v3,%v22,\ALPHA_VECREG,%v3 
++    vst %v3,32(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++
++    vl %v4,48(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmadb    %v4,%v23,\ALPHA_VECREG,%v4 
++    vst %v4,48(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++
++ 
++   la \CIJ_REG,64(\CIJ_REG)
++ 
++.endm
++
++/*STORE TRMM C8X2*/
++.macro STORE_TRMM_8x2  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++    vfmdb    %v1,%v16,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG)
++    vfmdb    %v2,%v17,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG)
++    vfmdb    %v3,%v18,\ALPHA_VECREG
++    vst %v3,32(\CIJ_REG)
++    vfmdb    %v4,%v19,\ALPHA_VECREG
++    vst %v4,48(\CIJ_REG)
++    vfmdb    %v1,%v20,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmdb    %v2,%v21,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmdb    %v3,%v22,\ALPHA_VECREG
++    vst %v3,32(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmdb    %v4,%v23,\ALPHA_VECREG
++    vst %v4,48(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++   la \CIJ_REG,64(\CIJ_REG)
++.endm
++
++/*************************************Kernel4x2***************************************************/
++/*Zero C block Vectors*/
++.macro ZERO_CVEC_4x2
++    vzero  %v16  
++    vzero  %v17     
++    vzero  %v20   
++    vzero  %v21    
++     
++.endm
++
++/*Calculate for 4x2 C blocks*/
++.macro CALC_4x2  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)  
++        vlrepg %v1,8(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)     
++        vl  %v3, 16(\PTR_A_REG)       
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17 
++        la \PTR_A_REG, 32(\PTR_A_REG)       
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21   
++        la \PTR_B_REG, 16(\PTR_B_REG)    
++.endm
++
++/*Calculate for 4x2_4 C blocks*/
++.macro CALC_4x2_4  PTR_A_REG,PTR_B_REG
++
++        vlrepg %v7, 0(\PTR_B_REG)  
++        vlrepg %v1,8(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)     
++        vl  %v3, 16(\PTR_A_REG)       
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17        
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21   
++
++        vlrepg %v7, 16(\PTR_B_REG)  
++        vlrepg %v1,24(\PTR_B_REG)    
++        vl  %v2, 32(\PTR_A_REG)     
++        vl  %v3, 48(\PTR_A_REG)       
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17        
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21  
++
++        vlrepg %v7, 32(\PTR_B_REG)  
++        vlrepg %v1,40(\PTR_B_REG)    
++        vl  %v2, 64(\PTR_A_REG)     
++        vl  %v3, 80(\PTR_A_REG)       
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17        
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21  
++
++
++        vlrepg %v7, 48(\PTR_B_REG)  
++        vlrepg %v1,56(\PTR_B_REG)    
++        vl  %v2, 96(\PTR_A_REG)     
++        vl  %v3, 112(\PTR_A_REG)       
++        vfmadb    %v16,%v2,%v7,%v16   
++        vfmadb    %v17,%v3,%v7,%v17  
++        la \PTR_B_REG, 64(\PTR_B_REG)         
++        vfmadb    %v20,%v2,%v1,%v20   
++        vfmadb    %v21,%v3,%v1,%v21  
++        la \PTR_A_REG, 128(\PTR_A_REG)    
++.endm
++ 
++
++/*STORE C4x2*/
++.macro STORE_4x2  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++    
++    vl %v1,0(\CIJ_REG)
++    vfmadb    %v1,%v16,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG)
++      
++    vl %v2,16(\CIJ_REG)
++    vfmadb    %v2,%v17,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG)
++ 
++ 
++    vl %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmadb    %v1,%v20,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++
++    vl %v2,16(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmadb    %v2,%v21,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG,\LDC_BYTE_ORIGINAL) 
++ 
++    la \CIJ_REG,32(\CIJ_REG)
++ 
++.endm
++
++/*STORE TRMM C4x2*/
++.macro STORE_TRMM_4x2  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++    vfmdb    %v1,%v16,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG)
++    vfmdb    %v2,%v17,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG)
++    vfmdb    %v1,%v20,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmdb    %v2,%v21,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG,\LDC_BYTE_ORIGINAL) 
++    la \CIJ_REG,32(\CIJ_REG)
++.endm
++
++/*************************************Kernel2x2***************************************************/
++/*Zero C block Vectors*/
++.macro ZERO_CVEC_2x2
++    vzero  %v16       
++    vzero  %v20      
++     
++.endm
++
++/*Calculate for 2x2 C blocks*/
++.macro CALC_2x2  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)  
++        vlrepg %v1,8(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16    
++        la \PTR_A_REG, 16(\PTR_A_REG)       
++        vfmadb    %v20,%v2,%v1,%v20     
++        la \PTR_B_REG, 16(\PTR_B_REG)    
++.endm
++ 
++/*Calculate for 2x2_4 C blocks*/
++.macro CALC_2x2_4  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)  
++        vlrepg %v1,8(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16          
++        vfmadb    %v20,%v2,%v1,%v20   
++
++        vlrepg %v7, 16(\PTR_B_REG)  
++        vlrepg %v1,24(\PTR_B_REG)    
++        vl  %v2, 16(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16          
++        vfmadb    %v20,%v2,%v1,%v20 
++
++        vlrepg %v7, 32(\PTR_B_REG)  
++        vlrepg %v1,40(\PTR_B_REG)    
++        vl  %v2, 32(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16          
++        vfmadb    %v20,%v2,%v1,%v20 
++
++
++        vlrepg %v7, 48(\PTR_B_REG)  
++        vlrepg %v1,56(\PTR_B_REG)    
++        vl  %v2, 48(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16          
++        vfmadb    %v20,%v2,%v1,%v20  
++  
++        la \PTR_B_REG, 64(\PTR_B_REG)  
++        la \PTR_A_REG, 64(\PTR_A_REG)    
++.endm
++
++/*STORE C2x2*/
++.macro STORE_2x2  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++    
++    vl %v1,0(\CIJ_REG)
++    vfmadb    %v1,%v16,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG) 
++
++    vl %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    vfmadb    %v1,%v20,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL) 
++
++    la \CIJ_REG,16(\CIJ_REG)
++ 
++.endm
++
++/*STORE TRMM C2x2*/
++.macro STORE_TRMM_2x2  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++    vfmdb    %v1,%v16,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG) 
++    vfmdb    %v1,%v20,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG,\LDC_BYTE_ORIGINAL) 
++    la \CIJ_REG,16(\CIJ_REG)
++.endm
++
++/**************************************Kernel1x2*************************************************/
++/*Zero C block Vectors*/
++.macro ZERO_CVEC_1x2
++    vzero  %v1       
++.endm
++/*Calculate for 1x2 C blocks.This Time BroadCast A. but Load B multiple*/
++.macro CALC_1x2  PTR_A_REG,PTR_B_REG
++        vl %v4, 0(\PTR_B_REG)      
++        vlrepg  %v3, 0(\PTR_A_REG)  
++        la \PTR_B_REG, 16(\PTR_B_REG)       
++        vfmadb    %v1,%v3,%v4,%v1   
++        la \PTR_A_REG, 8(\PTR_A_REG)      
++.endm
++
++.macro CALC_1x2_4  PTR_A_REG,PTR_B_REG
++        vl %v4, 0(\PTR_B_REG)      
++        vlrepg  %v3, 0(\PTR_A_REG)         
++        vfmadb    %v1,%v3,%v4,%v1  
++
++        vl %v4, 16(\PTR_B_REG)      
++        vlrepg  %v3, 8(\PTR_A_REG)         
++        vfmadb    %v1,%v3,%v4,%v1  
++
++        vl %v4, 32(\PTR_B_REG)      
++        vlrepg  %v3, 16(\PTR_A_REG)         
++        vfmadb    %v1,%v3,%v4,%v1  
++
++        vl %v4, 48(\PTR_B_REG)      
++        vlrepg  %v3, 24(\PTR_A_REG)         
++        vfmadb    %v1,%v3,%v4,%v1  
++
++        la \PTR_B_REG, 64(\PTR_B_REG) 
++        la \PTR_A_REG, 32(\PTR_A_REG)      
++.endm
++
++.macro STORE_1x2  ALPHA_REG,CIJ_REG , LDC_BYTE_ORIGINAL
++/**/
++    vfmdb %v1,%v1,\ALPHA_REG 
++    vrepg %v4,%v1,1  
++    adb %f1, 0(\CIJ_REG)
++    std %f1,0(\CIJ_REG)
++
++    adb %f4,0(\CIJ_REG,\LDC_BYTE_ORIGINAL)
++    std %f4,0(\CIJ_REG,\LDC_BYTE_ORIGINAL) 
++      
++    la \CIJ_REG,8(\CIJ_REG)
++
++.endm
++
++.macro STORE_TRMM_1x2  ALPHA_REG,CIJ_REG , LDC_BYTE_ORIGINAL
++/**/
++    vfmdb %v1,%v1,\ALPHA_REG 
++    vrepg %v4,%v1,1  
++    std %f1,0(\CIJ_REG)
++    std %f4,0(\CIJ_REG,\LDC_BYTE_ORIGINAL) 
++    la \CIJ_REG,8(\CIJ_REG)
++.endm
++
++/**************************************BN=1*******************************************************/
++/*************************************Kernel8x1***************************************************/
++/*Zero C block Vectors*/
++.macro ZERO_CVEC_8x1
++    vzero  %v16  
++    vzero  %v17
++    vzero  %v18  
++    vzero  %v19     
++.endm
++/*Calculate for 8x1 C blocks*/
++.macro CALC_8x1  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)     
++        vl  %v3, 16(\PTR_A_REG)     
++        vl  %v4, 32(\PTR_A_REG)   
++        vl  %v5, 48(\PTR_A_REG)  
++        la \PTR_B_REG, 8(\PTR_B_REG)    
++        vfmadb    %v16,%v2,%v7,%v16      
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18  
++        la \PTR_A_REG, 64(\PTR_A_REG)  
++        vfmadb    %v19,%v5,%v7,%v19    
++.endm
++
++/*Calculate for 8x1_4 C blocks*/
++.macro CALC_8x1_4  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)     
++        vl  %v3, 16(\PTR_A_REG)     
++        vl  %v4, 32(\PTR_A_REG)   
++        vl  %v5, 48(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16      
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18    
++        vfmadb    %v19,%v5,%v7,%v19 
++
++        vlrepg %v7, 8(\PTR_B_REG)    
++        vl  %v2, 64(\PTR_A_REG)     
++        vl  %v3, 80(\PTR_A_REG)     
++        vl  %v4, 96(\PTR_A_REG)   
++        vl  %v5, 112(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16      
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18    
++        vfmadb    %v19,%v5,%v7,%v19 
++
++        vlrepg %v7, 16(\PTR_B_REG)    
++        vl  %v2, 128(\PTR_A_REG)     
++        vl  %v3, 144(\PTR_A_REG)     
++        vl  %v4, 160(\PTR_A_REG)   
++        vl  %v5, 176(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16      
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18    
++        vfmadb    %v19,%v5,%v7,%v19 
++
++        vlrepg %v7, 24(\PTR_B_REG)    
++        vl  %v2, 192(\PTR_A_REG)     
++        vl  %v3, 208(\PTR_A_REG)     
++        vl  %v4, 224(\PTR_A_REG)   
++        vl  %v5, 240(\PTR_A_REG)      
++        vfmadb    %v16,%v2,%v7,%v16      
++        vfmadb    %v17,%v3,%v7,%v17   
++        vfmadb    %v18,%v4,%v7,%v18    
++        vfmadb    %v19,%v5,%v7,%v19 
++
++
++        la \PTR_A_REG, 256(\PTR_A_REG)
++        la \PTR_B_REG, 32(\PTR_B_REG)   
++.endm
++ 
++/*STORE C8X1*/
++.macro STORE_8x1  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++    
++    vl %v1,0(\CIJ_REG)
++    vfmadb    %v1,%v16,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG)
++      
++    vl %v2,16(\CIJ_REG)
++    vfmadb    %v2,%v17,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG)
++
++    vl %v3,32(\CIJ_REG)
++    vfmadb    %v3,%v18,\ALPHA_VECREG,%v3 
++    vst %v3,32(\CIJ_REG)
++
++    vl %v4,48(\CIJ_REG)
++    vfmadb    %v4,%v19,\ALPHA_VECREG,%v4 
++    vst %v4,48(\CIJ_REG)
++     
++    la \CIJ_REG,64(\CIJ_REG)
++ 
++.endm
++ 
++/*STORE TRMM C8X1*/
++.macro STORE_TRMM_8x1  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++    vfmdb    %v1,%v16,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG)
++    vfmdb    %v2,%v17,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG)
++    vfmdb    %v3,%v18,\ALPHA_VECREG
++    vst %v3,32(\CIJ_REG)
++    vfmdb    %v4,%v19,\ALPHA_VECREG
++    vst %v4,48(\CIJ_REG)
++    la \CIJ_REG,64(\CIJ_REG)
++.endm
++ 
++
++/*************************************Kernel4x1***************************************************/
++/*Zero C block Vectors*/
++.macro ZERO_CVEC_4x1
++    vzero  %v16  
++    vzero  %v17      
++.endm
++/*Calculate for 4x1 C blocks*/
++.macro CALC_4x1  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)     
++        vl  %v3, 16(\PTR_A_REG)    
++        la \PTR_B_REG, 8(\PTR_B_REG)    
++        vfmadb    %v16,%v2,%v7,%v16      
++        vfmadb    %v17,%v3,%v7,%v17   
++        la \PTR_A_REG, 32(\PTR_A_REG)     
++.endm
++ 
++/*Calculate for 4x1_4 C blocks*/
++.macro CALC_4x1_4  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)     
++        vl  %v3, 16(\PTR_A_REG)       
++        vfmadb    %v16,%v2,%v7,%v16      
++        vfmadb    %v17,%v3,%v7,%v17  
++
++        vlrepg %v7, 8(\PTR_B_REG)    
++        vl  %v2, 32(\PTR_A_REG)     
++        vl  %v3, 48(\PTR_A_REG)       
++        vfmadb    %v16,%v2,%v7,%v16      
++        vfmadb    %v17,%v3,%v7,%v17 
++
++        vlrepg %v7, 16(\PTR_B_REG)    
++        vl  %v2, 64(\PTR_A_REG)     
++        vl  %v3, 80(\PTR_A_REG)       
++        vfmadb    %v16,%v2,%v7,%v16      
++        vfmadb    %v17,%v3,%v7,%v17 
++
++        vlrepg %v7, 24(\PTR_B_REG)    
++        vl  %v2, 96(\PTR_A_REG)     
++        vl  %v3, 112(\PTR_A_REG)       
++        vfmadb    %v16,%v2,%v7,%v16      
++        vfmadb    %v17,%v3,%v7,%v17 
++
++        la \PTR_B_REG, 32(\PTR_B_REG)  
++        la \PTR_A_REG, 128(\PTR_A_REG)     
++.endm
++
++/*STORE C4X1*/
++.macro STORE_4x1  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++    
++    vl %v1,0(\CIJ_REG)
++    vfmadb    %v1,%v16,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG)
++      
++    vl %v2,16(\CIJ_REG)
++    vfmadb    %v2,%v17,\ALPHA_VECREG,%v2 
++    vst %v2,16(\CIJ_REG)
++ 
++     
++    la \CIJ_REG,32(\CIJ_REG)
++ 
++.endm
++
++/*STORE TRMM C4X1*/
++.macro STORE_TRMM_4x1  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++    vfmdb    %v1,%v16,\ALPHA_VECREG
++    vst %v1,0(\CIJ_REG)
++    vfmdb    %v2,%v17,\ALPHA_VECREG
++    vst %v2,16(\CIJ_REG)
++    la \CIJ_REG,32(\CIJ_REG)
++.endm
++/*************************************Kernel2x1***************************************************/
++/*Zero C block Vectors*/
++.macro ZERO_CVEC_2x1
++    vzero  %v16       
++.endm
++/*Calculate for 2x1 C blocks*/
++.macro CALC_2x1  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)      
++        la \PTR_B_REG, 8(\PTR_B_REG)    
++        vfmadb    %v16,%v2,%v7,%v16    
++        la \PTR_A_REG, 16(\PTR_A_REG)     
++.endm
++
++/*Calculate for 2x1_4 C blocks*/
++.macro CALC_2x1_4  PTR_A_REG,PTR_B_REG
++        vlrepg %v7, 0(\PTR_B_REG)    
++        vl  %v2, 0(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16  
++
++        vlrepg %v7, 8(\PTR_B_REG)    
++        vl  %v2, 16(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16  
++
++        vlrepg %v7, 16(\PTR_B_REG)    
++        vl  %v2, 32(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16          
++
++        vlrepg %v7, 24(\PTR_B_REG)    
++        vl  %v2, 48(\PTR_A_REG)         
++        vfmadb    %v16,%v2,%v7,%v16  
++
++        la \PTR_B_REG, 32(\PTR_B_REG)   
++        la \PTR_A_REG, 64(\PTR_A_REG)     
++.endm
++ 
++/*STORE C2X1*/
++.macro STORE_2x1  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++    
++    vl %v1,0(\CIJ_REG)
++    vfmadb    %v1,%v16,\ALPHA_VECREG,%v1 
++    vst %v1,0(\CIJ_REG) 
++
++    la \CIJ_REG,16(\CIJ_REG)
++ 
++.endm
++
++/*STORE TRMM C2X1*/
++.macro STORE_TRMM_2x1  ALPHA_VECREG,CIJ_REG , LDC_BYTE_ORIGINAL
++    vfmdb    %v1,%v16,\ALPHA_VECREG  
++    vst %v1,0(\CIJ_REG) 
++    la \CIJ_REG,16(\CIJ_REG)
++.endm
++/*************************************Kernel1x1***************************************************/
++/*Zero C block Vectors*/
++.macro ZERO_CVEC_1x1
++    LZDR %f1       
++.endm
++/*Calculate for 1x1 C blocks*/
++.macro CALC_1x1  PTR_A_REG,PTR_B_REG
++     ld %f2,0(\PTR_A_REG) /**a*/
++     la  \PTR_A_REG,8(\PTR_A_REG)
++     madb %f1,%f2,0(\PTR_B_REG)
++     la  \PTR_B_REG,8(\PTR_B_REG)     
++.endm
++
++/*Calculate for 1x1_4 C blocks*/
++.macro CALC_1x1_4  PTR_A_REG,PTR_B_REG
++     ld %f2,0(\PTR_A_REG) /**a*/
++     madb %f1,%f2,0(\PTR_B_REG)
++
++     ld %f2,8(\PTR_A_REG) /**a*/
++     madb %f1,%f2,8(\PTR_B_REG)
++
++     ld %f2,16(\PTR_A_REG) /**a*/
++     madb %f1,%f2,16(\PTR_B_REG)
++
++     ld %f2,24(\PTR_A_REG) /**a*/
++     madb %f1,%f2,24(\PTR_B_REG)          
++
++     la  \PTR_A_REG,32(\PTR_A_REG)
++     la  \PTR_B_REG,32(\PTR_B_REG)     
++.endm
++ 
++/*STORE C1X1*/
++.macro STORE_1x1  ALPHA_FLOAT,CIJ_REG,LDC_BYTE_ORIGINAL  
++     ld %f2,0(CIJ_LOCAL)
++     madbr %f2,%f1,\ALPHA_FLOAT
++     std %f2,0(CIJ_LOCAL) 
++     la \CIJ_REG,8(\CIJ_REG) 
++.endm
++
++/*STORE C1X1*/
++.macro STORE_TRMM_1x1  ALPHA_FLOAT,CIJ_REG,LDC_BYTE_ORIGINAL  
++     mdbr %f1,\ALPHA_FLOAT
++     std %f1,0(CIJ_LOCAL) 
++     la \CIJ_REG,8(\CIJ_REG) 
++.endm
++
++
++/****************************TRMM POINTER REFRESH MACROSES*************************/
++
++.macro RefreshPointers  PTR_A,PTR_B,OFF_VAL,B_VAL,C_A,C_B
++    #if (defined(LEFT) &&  defined(TRANSA)) ||  (!defined(LEFT) && !defined(TRANSA))
++               /*  ptrbb = bb;*/
++            lgr \PTR_B,\B_VAL      /*refresh BPOINT*/
++
++    #else
++             /*  ptrba  =ptrba+ off*C_A;
++              ptrbb = bb + off*C_B;*/
++.if \C_B==4 
++		.if \C_A==8 
++			sllg \PTR_B, \OFF_VAL,5
++			la \PTR_A,0(\PTR_A,\PTR_B) /*ptrba+off*4*/
++			agr \PTR_A,\PTR_B /*ptrba+off*4**/
++			la \PTR_B,0(\B_VAL,\PTR_B)	  
++		.elseif \C_A==4
++			sllg \PTR_B, \OFF_VAL,5 
++			agr \PTR_A,\PTR_B /*ptrba+off*4**/
++			la \PTR_B,0(\B_VAL,\PTR_B)	  /*refresh BPOINT*/
++		.elseif \C_A==2
++			sllg \PTR_B, \OFF_VAL,4 
++			la \PTR_A,0(\PTR_A,\PTR_B) /*ptrba+off*2**/
++			agr \PTR_B, \PTR_B   
++			la \PTR_B,0(\B_VAL,\PTR_B)	  /*refresh BPOINT*/
++
++		.elseif \C_A==1
++			sllg \PTR_B, \OFF_VAL,3 
++			agr \PTR_A,\PTR_B /*ptrba+off*4**/
++			sllg \PTR_B, \OFF_VAL,5   
++			la \PTR_B,0(\B_VAL,\PTR_B)	  /*refresh BPOINT*/
++		.endif
++
++.elseif \C_B==2
++		.if \C_A==8 
++			sllg \PTR_B, \OFF_VAL,6 
++			agr \PTR_A,\PTR_B /*ptrba+off*8**/
++			sllg \PTR_B, \OFF_VAL,4   
++			la \PTR_B,0(\B_VAL,\PTR_B)	  /*refresh BPOINT*/
++		.elseif \C_A==4
++			sllg \PTR_B, \OFF_VAL,4 
++			la \PTR_A,0(\PTR_A,\PTR_B) /*ptrba+off*2**/
++			agr \PTR_A,\PTR_B /*ptrba+off*2**/  
++			la \PTR_B,0(\B_VAL,\PTR_B)	  /*refresh BPOINT*/
++		.elseif \C_A==2
++			sllg \PTR_B, \OFF_VAL,4 
++			agr \PTR_A,\PTR_B /*ptrba+off*2**/ 
++			la \PTR_B,0(\B_VAL,\PTR_B)	  /*refresh BPOINT*/ 
++		.elseif \C_A==1
++			sllg \PTR_B, \OFF_VAL,3 
++			la \PTR_A,0(\PTR_A,\PTR_B) /*ptrba+off*1**/
++			agr \PTR_B,\PTR_B /* off+off**/  
++			la \PTR_B,0(\B_VAL,\PTR_B)	  /*refresh BPOINT*/
++		.endif
++
++.elseif \C_B==1
++		.if \C_A==8 
++			sllg \PTR_B, \OFF_VAL,6 
++			agr \PTR_A,\PTR_B /*ptrba+off*8**/
++			sllg \PTR_B, \OFF_VAL,3 
++			la \PTR_B,0(\B_VAL,\PTR_B)	  /*refresh BPOINT*/
++		.elseif \C_A==4
++			sllg \PTR_B, \OFF_VAL,5 
++			agr \PTR_A,\PTR_B /*ptrba+off*4**/
++			sllg \PTR_B, \OFF_VAL,3 
++			la \PTR_B,0(\B_VAL,\PTR_B)	  /*refresh BPOINT*/
++		.elseif \C_A==2
++			sllg \PTR_B, \OFF_VAL,3 
++			la \PTR_A,0(\PTR_A,\PTR_B) /*ptrba+off*1**/
++			agr \PTR_A,\PTR_B /*ptrba+off*1**/
++			la \PTR_B,0(\B_VAL,\PTR_B)	  /*refresh BPOINT*/
++
++		.elseif \C_A==1
++			sllg \PTR_B, \OFF_VAL,3 
++			agr \PTR_A,\PTR_B /*ptrba+off*1**/ 
++			la \PTR_B,0(\B_VAL,\PTR_B)	  /*refresh BPOINT*/
++		.endif
++.endif
++             
++ 
++    #endif 
++.endm
++
++/**/
++.macro RefreshTempBk TEMP_VAL,BK_VAL,OFF_VAL,INCR_A,INCR_B
++    #if (defined(LEFT) && !defined(TRANSA)) ||  (!defined(LEFT) && defined(TRANSA))
++                            /* temp = bk-off;*/
++           sgrk \TEMP_VAL,\BK_VAL,\OFF_VAL
++
++    #elif defined(LEFT)
++                            /* temp = off+INCR_A;	// number of values in A */
++           la \TEMP_VAL,\INCR_A(\OFF_VAL)
++    #else
++                            /* temp = off+INCR_B	// number of values in B*/
++           la \TEMP_VAL,\INCR_B(\OFF_VAL)
++    #endif
++
++.endm
++ 
++
++.macro RefreshPointersAndOFF TEMP_VAL,BK_VAL,OFF_VAL,PTR_B,PTR_A,C_A,C_B
++
++    #if ( defined(LEFT) && defined(TRANSA)) || (!defined(LEFT) && !defined(TRANSA))
++                    /*temp = bk - off;*/
++                    sgrk \TEMP_VAL,\BK_VAL,\OFF_VAL
++    #ifdef LEFT
++                    /*temp -= 8; // number of values in A*/
++                    lay \TEMP_VAL,-\C_A(\TEMP_VAL)
++    #else
++                    /*temp -= 4; // number of values in B*/
++                   lay \TEMP_VAL,-\C_B(\TEMP_VAL)
++    #endif
++                    /*ptrba += temp*C_A;
++                    ptrbb += temp*C_B;*/
++	.if \C_B==4
++		.if  \C_A==8 
++			sllg \TEMP_VAL, \TEMP_VAL,5 /*temp*4*/
++			la \PTR_B,0(\PTR_B,\TEMP_VAL) /*ptrbb+temp*C_B*/ 
++			agr \PTR_A, \TEMP_VAL  /*ptrba+temp*C_A*/		
++			la \PTR_A,0(\PTR_A,\TEMP_VAL) /*ptrba+temp*C_A*/ 
++		.elseif \C_A==4
++			sllg \TEMP_VAL, \TEMP_VAL,5 /*temp*4*/
++			agr \PTR_B, \TEMP_VAL  /*ptrbb+temp*C_B*/	    
++			la \PTR_A,0(\PTR_A,\TEMP_VAL) /*ptrba+temp*C_A*/ 
++		.elseif \C_A==2
++			sllg \TEMP_VAL, \TEMP_VAL,4 /*temp*2*/
++			agr \PTR_B, \TEMP_VAL  /*ptrbb+temp*C_B*/	    
++			la \PTR_A,0(\PTR_A,\TEMP_VAL) /*ptrba+temp*C_A*/ 
++			agr \PTR_B, \TEMP_VAL  /*ptrbb+temp*C_B*/   
++		.elseif \C_A==1
++			sllg \TEMP_VAL, \TEMP_VAL,3 /*temp*1*/	  
++			la \PTR_A,0(\PTR_A,\TEMP_VAL) /*ptrba+temp*C_A*/ 
++			sllg \TEMP_VAL, \TEMP_VAL,2 /*temp*2*2*/     
++			agr \PTR_B, \TEMP_VAL  /*ptrbb+temp*C_B*/  
++		 .endif
++	.elseif \C_B==2
++		.if  \C_A==8 
++			sllg \TEMP_VAL, \TEMP_VAL,4 /*temp*2*/
++			la \PTR_B,0(\PTR_B,\TEMP_VAL) /*ptrbb+temp*C_B*/ 
++			sllg \TEMP_VAL, \TEMP_VAL,2   /*temp*2*4 */	   
++			la \PTR_A,0(\PTR_A,\TEMP_VAL) /*ptrba+temp*C_A*/ 
++		  .elseif \C_A==4
++			sllg \TEMP_VAL, \TEMP_VAL,4 /*temp*2*/
++			la \PTR_B,0(\PTR_B,\TEMP_VAL) /*ptrbb+temp*C_B*/ 
++			agr \TEMP_VAL, \TEMP_VAL	  
++			la \PTR_A,0(\PTR_A,\TEMP_VAL) /*ptrba+temp*C_A*/   
++		  .elseif \C_A==2
++			sllg \TEMP_VAL, \TEMP_VAL,4 /*temp*2*/
++			la \PTR_B,0(\PTR_B,\TEMP_VAL) /*ptrbb+temp*C_B*/    
++			agr \PTR_A, \TEMP_VAL  /*ptrba+temp*C_A*/	
++		 .elseif \C_A==1
++			sllg \TEMP_VAL, \TEMP_VAL,3 /*temp*1*/
++			la \PTR_B,0(\PTR_B,\TEMP_VAL) /*ptrbb+temp*C_B*/    
++			agr \PTR_A, \TEMP_VAL  /*ptrba+temp*C_A*/ 
++			la \PTR_B,0(\PTR_B,\TEMP_VAL) /*ptrbb+temp*C_B*/  
++		  .endif
++	.elseif \C_B==1
++		.if  \C_A==8 
++			sllg \TEMP_VAL, \TEMP_VAL,3 /*temp*1*/
++			la \PTR_B,0(\PTR_B,\TEMP_VAL) /*ptrbb+temp*C_B*/ 
++			sllg \TEMP_VAL, \TEMP_VAL,3   /*temp*1*8 */	   
++			la \PTR_A,0(\PTR_A,\TEMP_VAL) /*ptrba+temp*C_A*/ 
++		 .elseif \C_A==4
++			sllg \TEMP_VAL, \TEMP_VAL,3 /*temp*1*/
++			la \PTR_B,0(\PTR_B,\TEMP_VAL) /*ptrbb+temp*C_B*/ 
++			sllg \TEMP_VAL, \TEMP_VAL,2   /*temp*1*4 */	   
++			la \PTR_A,0(\PTR_A,\TEMP_VAL) /*ptrba+temp*C_A*/ 
++		 .elseif \C_A==2
++			sllg \TEMP_VAL, \TEMP_VAL,3 /*temp*1*/
++			la \PTR_B,0(\PTR_B,\TEMP_VAL) /*ptrbb+temp*C_B*/ 
++			agr \TEMP_VAL, \TEMP_VAL	
++			la \PTR_A,0(\PTR_A,\TEMP_VAL) /*ptrba+temp*C_A*/    
++		.elseif \C_A==1
++			sllg \TEMP_VAL, \TEMP_VAL,3 /*temp*1*/
++			la \PTR_B,0(\PTR_B,\TEMP_VAL) /*ptrbb+temp*C_B*/ 
++			agr \PTR_A, \TEMP_VAL  /*ptrba+temp*C_A*/ 
++	   .endif			 
++	.endif
++    #endif
++
++    #ifdef LEFT
++                    /*off += 8; // number of values in A*/
++                    aghi \OFF_VAL,\C_A
++    #endif
++.endm
+\ No newline at end of file
+diff --git a/kernel/zarch/trmm8x4V.S b/kernel/zarch/trmm8x4V.S
+new file mode 100644
+index 00000000..8e6a03c1
+--- /dev/null
++++ b/kernel/zarch/trmm8x4V.S
+@@ -0,0 +1,877 @@
++/***************************************************************************
++Copyright (c) 2013-2017, The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++
++/**************************************************************************************
++* 2017/01/01 AbdelRauf (quickwritereader@gmail.com)
++* 	 BLASTEST 		: OK
++* 	 CTEST			: OK
++* 	 TEST			: OK
++**************************************************************************************/
++
++/*********************************************************************/
++/* Copyright 2009, 2010 The University of Texas at Austin.           */
++/* All rights reserved.                                              */
++/*                                                                   */
++/* Redistribution and use in source and binary forms, with or        */
++/* without modification, are permitted provided that the following   */
++/* conditions are met:                                               */
++/*                                                                   */
++/*   1. Redistributions of source code must retain the above         */
++/*      copyright notice, this list of conditions and the following  */
++/*      disclaimer.                                                  */
++/*                                                                   */
++/*   2. Redistributions in binary form must reproduce the above      */
++/*      copyright notice, this list of conditions and the following  */
++/*      disclaimer in the documentation and/or other materials       */
++/*      provided with the distribution.                              */
++/*                                                                   */
++/*    THIS  SOFTWARE IS PROVIDED  BY THE  UNIVERSITY OF  TEXAS AT    */
++/*    AUSTIN  ``AS IS''  AND ANY  EXPRESS OR  IMPLIED WARRANTIES,    */
++/*    INCLUDING, BUT  NOT LIMITED  TO, THE IMPLIED  WARRANTIES OF    */
++/*    MERCHANTABILITY  AND FITNESS FOR  A PARTICULAR  PURPOSE ARE    */
++/*    DISCLAIMED.  IN  NO EVENT SHALL THE UNIVERSITY  OF TEXAS AT    */
++/*    AUSTIN OR CONTRIBUTORS BE  LIABLE FOR ANY DIRECT, INDIRECT,    */
++/*    INCIDENTAL,  SPECIAL, EXEMPLARY,  OR  CONSEQUENTIAL DAMAGES    */
++/*    (INCLUDING, BUT  NOT LIMITED TO,  PROCUREMENT OF SUBSTITUTE    */
++/*    GOODS  OR  SERVICES; LOSS  OF  USE,  DATA,  OR PROFITS;  OR    */
++/*    BUSINESS INTERRUPTION) HOWEVER CAUSED  AND ON ANY THEORY OF    */
++/*    LIABILITY, WHETHER  IN CONTRACT, STRICT  LIABILITY, OR TORT    */
++/*    (INCLUDING NEGLIGENCE OR OTHERWISE)  ARISING IN ANY WAY OUT    */
++/*    OF  THE  USE OF  THIS  SOFTWARE,  EVEN  IF ADVISED  OF  THE    */
++/*    POSSIBILITY OF SUCH DAMAGE.                                    */
++/*                                                                   */
++/* The views and conclusions contained in the software and           */
++/* documentation are those of the authors and should not be          */
++/* interpreted as representing official policies, either expressed   */
++/* or implied, of The University of Texas at Austin.                 */
++/*********************************************************************/
++
++#define ASSEMBLER
++#include "common.h"
++
++/************** Notes ON IBM abi and IBM assembly**********************************************
++* General registers r0 and r1 should be used internally whenever possible
++* General registers r2 to r5 should be second choice
++* General registers r12 to r15 should only be used for their standard function.
++* r0 should not be used as address disp register
++ 
++#BLASLONG bm,BLASLONG bn,BLASLONG bk,FLOAT alpha,FLOAT* ba,FLOAT* bb,FLOAT* C,BLASLONG ldc
++ ##bm=r2,bn=r3, bk=r4, alpha=f0,ba=r5,bb=r6,stack[160] ,ldc=stack[168]  
++offset=stack[176]
++**********************************************************************************************/
++ 
++
++#define BM           %r2
++#define BM_CUR       %r0
++#define BN           %r3
++#define BN_CUR       %r10 
++#define BK           %r4 
++#define LDC_BYTE     %r8 
++#define ALPHA        %f0
++#define ALPHA_VECT   %v0 
++#define LOCAL_VAR1   %r9
++#define LOCAL_VAR2   %r1
++#define LOCAL_VAR3   %r11
++#define A            %r5
++#define B            %r6
++#define CIJ          %r7
++#define CIJ_LOCAL    %r12 
++#define OFF          %r13
++#define OFFSET       %f8
++#define ALIGN_4   .align 16
++#define ALIGN_2   .align 8
++#define PREFETCH_INS 1
++
++/**************************Include kernel helper macrosses**********************************/
++#include "kernelMacros.S"
++
++#if defined (TRMMKERNEL)
++
++#define STORE_8x4 STORE_TRMM_8x4
++#define STORE_4x4 STORE_TRMM_4x4
++#define STORE_2x4 STORE_TRMM_2x4
++#define STORE_1x4 STORE_TRMM_1x4
++
++#define STORE_8x2 STORE_TRMM_8x2
++#define STORE_4x2 STORE_TRMM_4x2
++#define STORE_2x2 STORE_TRMM_2x2
++#define STORE_1x2 STORE_TRMM_1x2
++
++#define STORE_8x1 STORE_TRMM_8x1
++#define STORE_4x1 STORE_TRMM_4x1
++#define STORE_2x1 STORE_TRMM_2x1
++#define STORE_1x1 STORE_TRMM_1x1
++
++#endif
++
++/***********************************DGEMM***********************************************************/
++
++PROLOGUE
++#if defined(TRMMKERNEL)
++stmg %r6,%r13,40(%r15)  
++#else 
++stmg %r6,%r12,40(%r15)   
++#endif
++lg CIJ, 160(%r15)
++lg LOCAL_VAR1, 168(%r15)
++#if defined(TRMMKERNEL)
++lg OFF,176(%r15)
++std OFFSET,32(%r15)
++ldgr OFFSET ,OFF
++#endif
++srlg BN_CUR,BN,2  
++vrepg ALPHA_VECT,ALPHA_VECT,0 /*replicate alpha which in f0*/
++
++sllg LDC_BYTE, LOCAL_VAR1,3  /*calculate lcd stride with bytes double=8 x<<3 */
++#if defined(TRMMKERNEL) && !defined(LEFT)
++   /*off = -offset;*/
++   lgdr LOCAL_VAR1,OFFSET
++   lcgr OFF,LOCAL_VAR1
++#endif
++cijle BN_CUR,0,.LX2 
++
++ALIGN_4
++.LX4_BN:
++#if defined(PREFETCH_INS)
++        pfd 1, 0(A)
++        pfd 1, 256(A)   
++        pfd 1, 0(B) 
++        pfd 1, 256(B)  
++#endif
++#if defined(TRMMKERNEL) && defined(LEFT)
++    /*off = offset;*/
++   lgdr OFF,OFFSET
++#endif
++srlg BM_CUR,BM,3  
++lgr LOCAL_VAR3,A 
++lgr CIJ_LOCAL,CIJ
++cijle BM_CUR,0,.L4x4
++ALIGN_4
++.L8x4_BM: /*BM_CUR  LOOP */
++
++#if defined(TRMMKERNEL)
++ 
++    /* RefreshPointers  PTR_A,PTR_B,OFF_VAL,B_VAL,C_A,C_B */
++     RefreshPointers  LOCAL_VAR3,LOCAL_VAR2,OFF,B,8,4
++
++     RefreshTempBk LOCAL_VAR1,BK,OFF,8,4
++     srl LOCAL_VAR1,2
++
++#else
++   srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++   lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++#endif
++
++ZERO_CVEC_8x4  
++cijle LOCAL_VAR1,0,.L8x4_mod
++
++
++ALIGN_4
++.L8x4_4_BK: /*BK_CUR LOOP */
++#if defined(PREFETCH_INS)
++        pfd 1, 512(LOCAL_VAR3)   
++#endif
++      CALC_8x4_4 LOCAL_VAR3,LOCAL_VAR2  
++#if defined(PREFETCH_INS)
++        pfd 1, 512(LOCAL_VAR2)  
++#endif 
++brctg LOCAL_VAR1,.L8x4_4_BK
++
++ALIGN_4
++.L8x4_mod:
++#if defined(TRMMKERNEL)
++      RefreshTempBk LOCAL_VAR1,BK,OFF,8,4
++      nill LOCAL_VAR1,3 
++#else
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++#endif
++jz .L8x4_BK_Store
++
++ALIGN_4
++.L8x4_BK: /*BK_CUR LOOP */
++      CALC_8x4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L8x4_BK
++
++ALIGN_4
++.L8x4_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_8x4 ALPHA_VECT,CIJ_LOCAL, LDC_BYTE
++#if defined(TRMMKERNEL) 
++                   /*RefreshPointersAndOFF TEMP_VAL,BK_VAL,OFF_VAL,L_VAR,PTR_A,C_A*/
++                    RefreshPointersAndOFF LOCAL_VAR1,BK,OFF,LOCAL_VAR2,LOCAL_VAR3,8,4
++#endif 
++brctg BM_CUR,.L8x4_BM 
++ 
++ALIGN_4
++.L4x4:
++  
++tmll BM,4   
++jz .L2x4
++ 
++ALIGN_4
++.L4x4_BM: /*BM start*/
++#if defined(TRMMKERNEL)
++
++    /* RefreshPointers  PTR_A,PTR_B,OFF_VAL,B_VAL,C_A,C_B */
++      RefreshPointers  LOCAL_VAR3,LOCAL_VAR2,OFF,B,4,4
++      RefreshTempBk LOCAL_VAR1,BK,OFF,4,4
++      srl LOCAL_VAR1,2
++
++#else
++    srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++    lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++#endif
++ZERO_CVEC_4x4  
++cijle LOCAL_VAR1,0,.L4x4_mod
++
++ALIGN_4
++.L4x4_4_BK: /*BK_CUR LOOP */
++      CALC_4x4_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L4x4_4_BK
++
++ALIGN_4
++.L4x4_mod:
++#if defined(TRMMKERNEL)
++      RefreshTempBk LOCAL_VAR1,BK,OFF,4,4
++      nill LOCAL_VAR1,3 
++#else
++    la LOCAL_VAR1,3(0,0)
++    NGR LOCAL_VAR1,BK /*refresh BK*/ 
++#endif
++jz .L4x4_BK_Store
++
++ALIGN_4
++.L4x4_BK: /*BK_CUR LOOP */
++      CALC_4x4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L4x4_BK
++
++ALIGN_4
++.L4x4_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_4x4 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++#if defined(TRMMKERNEL)
++       RefreshPointersAndOFF LOCAL_VAR1,BK,OFF,LOCAL_VAR2,LOCAL_VAR3,4,4
++#endif  
++ALIGN_2
++.L2x4:
++ 
++tmll BM,2  
++jz .L1x4
++ 
++ALIGN_4
++.L2x4_BM: /*BM start*/
++#if defined(TRMMKERNEL)
++
++     /* RefreshPointers  PTR_A,PTR_B,OFF_VAL,B_VAL,C_A,C_B */
++      RefreshPointers  LOCAL_VAR3,LOCAL_VAR2,OFF,B,2,4
++
++      RefreshTempBk LOCAL_VAR1,BK,OFF,2,4
++      srl LOCAL_VAR1,2
++
++#else
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++#endif
++ZERO_CVEC_2x4  
++cijle LOCAL_VAR1,0,.L2x4_mod
++
++ALIGN_4
++.L2x4_4_BK: /*BK_CUR LOOP */
++      CALC_2x4_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L2x4_4_BK
++
++ALIGN_4
++.L2x4_mod:
++#if defined(TRMMKERNEL)
++      RefreshTempBk LOCAL_VAR1,BK,OFF,2,4
++      nill LOCAL_VAR1,3 
++#else
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++#endif
++jz .L2x4_BK_Store
++
++ALIGN_4
++.L2x4_BK: /*BK_CUR LOOP */
++      CALC_2x4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L2x4_BK
++
++ALIGN_4
++.L2x4_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_2x4 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++#if defined(TRMMKERNEL)
++    RefreshPointersAndOFF LOCAL_VAR1,BK,OFF,LOCAL_VAR2,LOCAL_VAR3,2,4
++#endif  
++
++ALIGN_4
++.L1x4:
++ 
++tmll BM,1  
++jz .Lx4_INNER_END
++ 
++ALIGN_4
++.L1x4_BM: /*BM start*/
++#if defined(TRMMKERNEL)
++
++    /* RefreshPointers  PTR_A,PTR_B,OFF_VAL,B_VAL,C_A,C_B */
++      RefreshPointers  LOCAL_VAR3,LOCAL_VAR2,OFF,B,1,4
++      RefreshTempBk LOCAL_VAR1,BK,OFF,1,4
++      srl LOCAL_VAR1,2
++
++#else
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++#endif
++ZERO_CVEC_1x4  
++cijle LOCAL_VAR1,0,.L1x4_mod
++
++ALIGN_4
++.L1x4_4_BK: /*BK_CUR LOOP */
++      CALC_1x4_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L1x4_4_BK
++
++ALIGN_4
++.L1x4_mod:
++#if defined(TRMMKERNEL)
++       RefreshTempBk LOCAL_VAR1,BK,OFF,1,4
++      nill LOCAL_VAR1,3 
++#else
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/
++#endif 
++jz .L1x4_BK_Store
++
++ALIGN_4
++.L1x4_BK: /*BK_CUR LOOP */
++      CALC_1x4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L1x4_BK
++
++ALIGN_4
++.L1x4_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_1x4 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++#if defined(TRMMKERNEL)
++     RefreshPointersAndOFF LOCAL_VAR1,BK,OFF,LOCAL_VAR2,LOCAL_VAR3,1,4
++#endif  
++ALIGN_2
++.Lx4_INNER_END:
++
++
++/*add LDC_BYTE_COPY to new*/
++sllg LOCAL_VAR1,LDC_BYTE,2  /*multiply*4 */
++#if defined(TRMMKERNEL) && !defined(LEFT)
++    aghi OFF,4
++#endif
++sllg LOCAL_VAR2,BK,5  /*muyliply*4*sizeof(double)  =multiply*32* 2**5 */
++la CIJ,0(CIJ,LOCAL_VAR1)  /*refresh CIJ=CIJ+LDC_BYTE*4*/ 
++la B,0(B,LOCAL_VAR2)      /*refresh B=B+Bk*4*sizeof(double)  */
++
++brctg BN_CUR,.LX4_BN
++
++/*********************************X2 SECTION************************************************/
++ALIGN_4
++.LX2:
++tmll BN,2 
++jz .Lx1
++
++ALIGN_4
++.Lx2_BN:
++
++#if defined(TRMMKERNEL) && defined(LEFT)
++    /*off = offset;*/
++   lgdr OFF,OFFSET
++#endif
++
++srlg BM_CUR,BM,3  
++lgr LOCAL_VAR3,A
++lgr CIJ_LOCAL,CIJ
++cijle BM_CUR,0,.L4x2
++
++
++ALIGN_4
++.L8x2_BM: /*BM_CUR  LOOP */
++#if defined(TRMMKERNEL)
++
++    /* RefreshPointers  PTR_A,PTR_B,OFF_VAL,B_VAL,C_A,C_B */
++      RefreshPointers  LOCAL_VAR3,LOCAL_VAR2,OFF,B,8,2
++      RefreshTempBk LOCAL_VAR1,BK,OFF,8,2
++      srl LOCAL_VAR1,2
++
++#else
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++#endif
++ZERO_CVEC_8x2  
++cijle LOCAL_VAR1,0,.L8x2_mod
++
++ALIGN_4
++.L8x2_4_BK: /*BK_CUR LOOP */
++#if defined(PREFETCH_INS)
++        pfd 1, 256(LOCAL_VAR3)  
++        pfd 1,64(LOCAL_VAR2) 
++#endif
++      CALC_8x2_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L8x2_4_BK
++
++ALIGN_4
++.L8x2_mod:
++#if defined(TRMMKERNEL)
++      RefreshTempBk LOCAL_VAR1,BK,OFF,8,2
++      nill LOCAL_VAR1,3 
++#else
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++#endif
++jz .L8x2_BK_Store
++
++ALIGN_4
++.L8x2_BK: /*BK_CUR LOOP */
++      CALC_8x2 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L8x2_BK
++
++ALIGN_4
++.L8x2_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_8x2 ALPHA_VECT,CIJ_LOCAL, LDC_BYTE
++#if defined(TRMMKERNEL)
++     RefreshPointersAndOFF LOCAL_VAR1,BK,OFF,LOCAL_VAR2,LOCAL_VAR3,8,2
++#endif   
++ALIGN_4
++brctg BM_CUR,.L8x2_BM 
++ 
++ALIGN_2
++.L4x2:
++ 
++tmll BM,4 
++jz .L2x2
++ 
++ALIGN_4
++.L4x2_BM: /*BM start*/
++#if defined(TRMMKERNEL)
++    /* RefreshPointers  PTR_A,PTR_B,OFF_VAL,B_VAL,C_A,C_B */
++      RefreshPointers  LOCAL_VAR3,LOCAL_VAR2,OFF,B,4,2
++      RefreshTempBk LOCAL_VAR1,BK,OFF,4,2
++      srl LOCAL_VAR1,2
++
++#else
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++#endif
++ZERO_CVEC_4x2  
++cijle LOCAL_VAR1,0,.L4x2_mod
++
++ALIGN_4
++.L4x2_4_BK: /*BK_CUR LOOP */
++      CALC_4x2_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L4x2_4_BK
++
++ALIGN_4
++.L4x2_mod:
++#if defined(TRMMKERNEL)
++      RefreshTempBk LOCAL_VAR1,BK,OFF,4,2
++      nill LOCAL_VAR1,3 
++#else
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++#endif
++jz .L4x2_BK_Store
++
++ALIGN_4
++.L4x2_BK: /*BK_CUR LOOP */
++      CALC_4x2 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L4x2_BK
++
++ALIGN_4
++.L4x2_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_4x2 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++#if defined(TRMMKERNEL)
++     RefreshPointersAndOFF LOCAL_VAR1,BK,OFF,LOCAL_VAR2,LOCAL_VAR3,4,2
++#endif   
++ALIGN_2
++.L2x2:
++
++tmll BM,2   
++jz .L1x2
++ 
++ALIGN_4
++.L2x2_BM: /*BM start*/
++#if defined(TRMMKERNEL)
++
++    /* RefreshPointers  PTR_A,PTR_B,OFF_VAL,B_VAL,C_A,C_B */
++      RefreshPointers  LOCAL_VAR3,LOCAL_VAR2,OFF,B,2,2
++      RefreshTempBk LOCAL_VAR1,BK,OFF,2,2
++      srl LOCAL_VAR1,2
++
++#else
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++#endif
++ZERO_CVEC_2x2  
++cijle LOCAL_VAR1,0,.L2x2_mod
++
++ALIGN_4
++.L2x2_4_BK: /*BK_CUR LOOP */
++      CALC_2x2_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L2x2_4_BK
++
++ALIGN_4
++.L2x2_mod:
++#if defined(TRMMKERNEL)
++      RefreshTempBk LOCAL_VAR1,BK,OFF,2,2
++      nill LOCAL_VAR1,3 
++#else
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++#endif
++jz .L2x2_BK_Store
++
++ALIGN_4
++.L2x2_BK: /*BK_CUR LOOP */
++      CALC_2x2 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L2x2_BK
++
++ALIGN_4
++.L2x2_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_2x2 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++#if defined(TRMMKERNEL)
++     RefreshPointersAndOFF LOCAL_VAR1,BK,OFF,LOCAL_VAR2,LOCAL_VAR3,2,2
++#endif  
++
++ALIGN_2
++.L1x2:
++ 
++tmll BM,1  
++jz .Lx2_INNER_END
++ 
++ALIGN_4
++.L1x2_BM: /*BM start*/
++#if defined(TRMMKERNEL)
++    /* RefreshPointers  PTR_A,PTR_B,OFF_VAL,B_VAL,C_A,C_B */
++      RefreshPointers  LOCAL_VAR3,LOCAL_VAR2,OFF,B,1,2
++      RefreshTempBk LOCAL_VAR1,BK,OFF,1,2
++      srl LOCAL_VAR1,2
++
++#else
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++#endif
++ZERO_CVEC_1x2  
++cijle LOCAL_VAR1,0,.L1x2_mod
++
++ALIGN_4
++.L1x2_4_BK: /*BK_CUR LOOP */
++      CALC_1x2_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L1x2_4_BK
++
++ALIGN_4
++.L1x2_mod:
++#if defined(TRMMKERNEL)
++      RefreshTempBk LOCAL_VAR1,BK,OFF,1,2
++      nill LOCAL_VAR1,3 
++#else
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++#endif
++jz .L1x2_BK_Store
++
++ALIGN_4
++.L1x2_BK: /*BK_CUR LOOP */
++      CALC_1x2 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L1x2_BK
++
++ALIGN_4
++.L1x2_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_1x2 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++#if defined(TRMMKERNEL)
++     RefreshPointersAndOFF LOCAL_VAR1,BK,OFF,LOCAL_VAR2,LOCAL_VAR3,1,2
++#endif  
++ALIGN_2
++.Lx2_INNER_END: 
++/*add LDC_BYTE_COPY to new*/
++la LOCAL_VAR1,0(LDC_BYTE,LDC_BYTE)   /*multiply*2 */
++sllg LOCAL_VAR2,BK,4  /*muyliply*2*sizeof(double)  =multiply*16* 2**4 */
++la CIJ,0(CIJ,LOCAL_VAR1)  /*refresh CIJ=CIJ+LDC_BYTE*4*/ 
++#if defined(TRMMKERNEL) && !defined(LEFT)
++    aghi OFF,2
++#endif
++la B,0(B,LOCAL_VAR2)      /*refresh B=B+Bk*4*sizeof(double)  */
++
++ 
++ 
++
++/*********************************X1 SECTION************************************************/
++ALIGN_2
++.Lx1:
++tmll BN,1  
++jz .L_FUNC_END
++
++ALIGN_4
++.Lx1_BN:
++
++#if defined(TRMMKERNEL) && defined(LEFT)
++    /*off = offset;*/
++   lgdr OFF,OFFSET
++#endif
++srlg BM_CUR,BM,3  
++lgr LOCAL_VAR3,A
++lgr CIJ_LOCAL,CIJ
++cijle BM_CUR,0,.L4x1
++
++
++ALIGN_4
++.L8x1_BM: /*BM_CUR  LOOP */
++#if defined(TRMMKERNEL)
++
++    /* RefreshPointers  PTR_A,PTR_B,OFF_VAL,B_VAL,C_A,C_B */
++      RefreshPointers  LOCAL_VAR3,LOCAL_VAR2,OFF,B,8,1
++      RefreshTempBk LOCAL_VAR1,BK,OFF,8,1
++      srl LOCAL_VAR1,2
++
++#else
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++#endif
++ZERO_CVEC_8x1  
++cijle LOCAL_VAR1,0,.L8x1_mod
++
++ALIGN_4
++.L8x1_4_BK: /*BK_CUR LOOP */
++#if defined(PREFETCH_INS)
++        pfd 1, 256(LOCAL_VAR3)
++#endif  
++      CALC_8x1_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L8x1_4_BK
++
++ALIGN_4
++.L8x1_mod:
++#if defined(TRMMKERNEL)
++      RefreshTempBk LOCAL_VAR1,BK,OFF,8,1
++      nill LOCAL_VAR1,3 
++#else
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++#endif
++jz .L8x1_BK_Store
++
++ALIGN_4
++.L8x1_BK: /*BK_CUR LOOP */
++      CALC_8x1 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L8x1_BK
++
++ALIGN_4
++.L8x1_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_8x1 ALPHA_VECT,CIJ_LOCAL, LDC_BYTE
++ #if defined(TRMMKERNEL)
++     RefreshPointersAndOFF LOCAL_VAR1,BK,OFF,LOCAL_VAR2,LOCAL_VAR3,8,1
++#endif
++ALIGN_4
++brctg BM_CUR,.L8x1_BM 
++ 
++ALIGN_2
++.L4x1:
++ 
++tmll BM,4  
++jz .L2x1
++ 
++ALIGN_4
++.L4x1_BM: /*BM start*/
++#if defined(TRMMKERNEL)
++
++    /* RefreshPointers  PTR_A,PTR_B,OFF_VAL,B_VAL,C_A,C_B */
++      RefreshPointers  LOCAL_VAR3,LOCAL_VAR2,OFF,B,4,1
++      RefreshTempBk LOCAL_VAR1,BK,OFF,4,1
++      srl LOCAL_VAR1,2
++
++#else
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++#endif
++ZERO_CVEC_4x1  
++cijle LOCAL_VAR1,0,.L4x1_mod
++
++ALIGN_4
++.L4x1_4_BK: /*BK_CUR LOOP */
++      CALC_4x1_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L4x1_4_BK
++
++ALIGN_4
++.L4x1_mod:
++#if defined(TRMMKERNEL)
++      RefreshTempBk LOCAL_VAR1,BK,OFF,4,1
++      nill LOCAL_VAR1,3 
++#else
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++#endif
++jz .L4x1_BK_Store
++
++ALIGN_4
++.L4x1_BK: /*BK_CUR LOOP */
++      CALC_4x1 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L4x1_BK
++
++ALIGN_4
++.L4x1_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_4x1 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++ #if defined(TRMMKERNEL)
++     RefreshPointersAndOFF LOCAL_VAR1,BK,OFF,LOCAL_VAR2,LOCAL_VAR3,4,1
++#endif
++ALIGN_2
++.L2x1:
++
++tmll BM,2   
++jz .L1x1
++ 
++ALIGN_4
++.L2x1_BM: /*BM start*/
++#if defined(TRMMKERNEL)
++    /* RefreshPointers  PTR_A,PTR_B,OFF_VAL,B_VAL,C_A,C_B */
++     RefreshPointers  LOCAL_VAR3,LOCAL_VAR2,OFF,B,2,1
++      RefreshTempBk LOCAL_VAR1,BK,OFF,2,1
++      srl LOCAL_VAR1,2
++
++#else
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++#endif
++ZERO_CVEC_2x1  
++cijle LOCAL_VAR1,0,.L2x1_mod
++
++ALIGN_4
++.L2x1_4_BK: /*BK_CUR LOOP */
++      CALC_2x1_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L2x1_4_BK
++
++ALIGN_4
++.L2x1_mod:
++#if defined(TRMMKERNEL)
++      RefreshTempBk LOCAL_VAR1,BK,OFF,2,1
++      nill LOCAL_VAR1,3 
++#else
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++#endif
++jz .L2x1_BK_Store
++
++ALIGN_4
++.L2x1_BK: /*BK_CUR LOOP */
++      CALC_2x1 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L2x1_BK
++
++ALIGN_4
++.L2x1_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_2x1 ALPHA_VECT ,CIJ_LOCAL, LDC_BYTE
++#if defined(TRMMKERNEL)
++     RefreshPointersAndOFF LOCAL_VAR1,BK,OFF,LOCAL_VAR2,LOCAL_VAR3,2,1
++#endif
++
++ALIGN_2
++.L1x1:
++ 
++tmll BM, 1   
++jz .Lx1_INNER_END
++ 
++ALIGN_4
++.L1x1_BM: /*BM start*/
++#if defined(TRMMKERNEL)
++    /* RefreshPointers  PTR_A,PTR_B,OFF_VAL,B_VAL,C_A,C_B */
++      RefreshPointers  LOCAL_VAR3,LOCAL_VAR2,OFF,B,1,1
++      RefreshTempBk LOCAL_VAR1,BK,OFF,1,1
++      srl LOCAL_VAR1,2
++
++#else
++srlg LOCAL_VAR1,BK,2  /*refresh BK*/  
++lgr LOCAL_VAR2,B      /*refresh BPOINT*/
++#endif
++ZERO_CVEC_1x1  
++cijle LOCAL_VAR1,0,.L1x1_mod
++
++ALIGN_4
++.L1x1_4_BK: /*BK_CUR LOOP */
++      CALC_1x1_4 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L1x1_4_BK
++
++ALIGN_4
++.L1x1_mod:
++#if defined(TRMMKERNEL)
++      RefreshTempBk LOCAL_VAR1,BK,OFF,1,1
++      nill LOCAL_VAR1,3 
++#else
++la LOCAL_VAR1,3(0,0)
++NGR LOCAL_VAR1,BK /*refresh BK*/ 
++#endif
++jz .L1x1_BK_Store
++
++ALIGN_4
++.L1x1_BK: /*BK_CUR LOOP */
++      CALC_1x1 LOCAL_VAR3,LOCAL_VAR2   
++brctg LOCAL_VAR1,.L1x1_BK
++
++ALIGN_4
++.L1x1_BK_Store:
++/*store C and use LDC_BYTE  AND CIJ_COPY for mem storing*/
++STORE_1x1 ALPHA ,CIJ_LOCAL, LDC_BYTE
++#if defined(TRMMKERNEL)
++     RefreshPointersAndOFF LOCAL_VAR1,BK,OFF,LOCAL_VAR2,LOCAL_VAR3,1,1
++#endif
++ALIGN_2
++.Lx1_INNER_END: 
++/*add LDC_BYTE_COPY to new*/ 
++sllg LOCAL_VAR2,BK,3  /*muyliply*2*sizeof(double)  =multiply*8* 2**3 */
++la CIJ,0(CIJ,LDC_BYTE)  /*refresh CIJ=CIJ+LDC_BYTE */ 
++#if defined(TRMMKERNEL) && !defined(LEFT)
++    aghi OFF,1
++#endif
++la B,0(B,LOCAL_VAR2)      /*refresh B=B+Bk*1*sizeof(double)  */
++ 
++
++ALIGN_2
++.L_FUNC_END:
++/*end*/
++#if defined(TRMMKERNEL)
++ld %f8,32(%r15)
++lmg %r6,%r13,40(%r15) 
++#else
++lmg %r6,%r12,40(%r15) 
++#endif
++br %r14
++.end
++
++
++
++
++
++
++
+diff --git a/param.h b/param.h
+index 0268fb5e..d28c63a9 100644
+--- a/param.h
++++ b/param.h
+@@ -2548,6 +2548,46 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #define SYMV_P	16
+ #endif
+ 
++#if defined(Z13)
++#define SNUMOPT		2
++#define DNUMOPT		4
++
++#define GEMM_DEFAULT_OFFSET_A 0
++#define GEMM_DEFAULT_OFFSET_B 0
++#define GEMM_DEFAULT_ALIGN 0x03fffUL
++
++#define SGEMM_DEFAULT_UNROLL_M  2
++#define SGEMM_DEFAULT_UNROLL_N  2
++
++#define DGEMM_DEFAULT_UNROLL_M  8
++#define DGEMM_DEFAULT_UNROLL_N  4
++
++#define CGEMM_DEFAULT_UNROLL_M  2
++#define CGEMM_DEFAULT_UNROLL_N  2
++
++#define ZGEMM_DEFAULT_UNROLL_M  2
++#define ZGEMM_DEFAULT_UNROLL_N  2
++
++#define SGEMM_DEFAULT_P	128
++ #define DGEMM_DEFAULT_P	320
++#define CGEMM_DEFAULT_P 96
++#define ZGEMM_DEFAULT_P 64
++
++#define SGEMM_DEFAULT_Q 240
++#define DGEMM_DEFAULT_Q 384
++#define CGEMM_DEFAULT_Q 120
++#define ZGEMM_DEFAULT_Q 120
++
++#define SGEMM_DEFAULT_R 12288
++#define DGEMM_DEFAULT_R 4096
++#define CGEMM_DEFAULT_R 4096
++#define ZGEMM_DEFAULT_R 4096
++
++
++#define SYMV_P	16
++#endif
++
++
+ 
+ #ifdef GENERIC
+ 
+-- 
+2.12.2
+
+
+From b489d350a1340d4aec3d2a7f9a97a588c118d670 Mon Sep 17 00:00:00 2001
+From: Abdurrauf <qwr@live.ru>
+Date: Wed, 4 Jan 2017 19:41:24 +0400
+Subject: [PATCH 4/6] Update README.md (cherry picked from commit
+ 7f2a959e3eb7ce1a91a0f685021e3be0d9ee0552)
+
+---
+ README.md | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/README.md b/README.md
+index 5428f0eb..af30a0c8 100644
+--- a/README.md
++++ b/README.md
+@@ -107,9 +107,12 @@ Please read GotoBLAS_01Readme.txt
+ - **ARM Cortex-A57**: Experimental
+ 
+ #### IBM zEnterprise System:
+-- **Z13**: Double precision real number
+-    git checkout z13
+-    make USE_TRMM=1
++- **Z13**: blas3 for double
++```
++     git checkout z13  
++     make USE_TRMM=1 
++```     
++     
+ 
+ ### Support OS:
+ - **GNU/Linux**
+-- 
+2.12.2
+
+
+From 0ba111288df793cafce7cb159d3a0e005cd59dfb Mon Sep 17 00:00:00 2001
+From: Zhang Xianyi <traits.zhang@gmail.com>
+Date: Mon, 9 Jan 2017 05:48:09 -0500
+Subject: [PATCH 5/6] Add USE_TRMM=1 for IBM z13 in kernel/Makefile.L3
+
+(cherry picked from commit 864e202afdc9761637b442f084f0f26039256fa4)
+---
+ README.md          | 6 +-----
+ kernel/Makefile.L3 | 4 ++++
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/README.md b/README.md
+index af30a0c8..1c3255fe 100644
+--- a/README.md
++++ b/README.md
+@@ -107,11 +107,7 @@ Please read GotoBLAS_01Readme.txt
+ - **ARM Cortex-A57**: Experimental
+ 
+ #### IBM zEnterprise System:
+-- **Z13**: blas3 for double
+-```
+-     git checkout z13  
+-     make USE_TRMM=1 
+-```     
++- **Z13**: blas3 for double 
+      
+ 
+ ### Support OS:
+diff --git a/kernel/Makefile.L3 b/kernel/Makefile.L3
+index e55f153f..86e692e5 100644
+--- a/kernel/Makefile.L3
++++ b/kernel/Makefile.L3
+@@ -36,6 +36,10 @@ ifeq ($(CORE), POWER8)
+ USE_TRMM = 1
+ endif
+ 
++ifeq ($(CORE), Z13)
++USE_TRMM = 1
++endif
++
+ 
+ 
+ 
+-- 
+2.12.2
+
+
+From 02459e22d3b8b34dbaea5d7e2e822d3c47b8cdef Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dan=20Hor=C3=A1k?= <dan@danny.cz>
+Date: Thu, 20 Apr 2017 21:13:41 +0200
+Subject: [PATCH 6/6] detect CPU on zArch
+
+(cherry picked from commit 81fed55782f0dd04649b1f0c4a44de85ac20162f)
+---
+ cpuid_zarch.c | 24 +++++++++++++++++++++---
+ 1 file changed, 21 insertions(+), 3 deletions(-)
+
+diff --git a/cpuid_zarch.c b/cpuid_zarch.c
+index e2e3b046..4e193542 100644
+--- a/cpuid_zarch.c
++++ b/cpuid_zarch.c
+@@ -42,9 +42,27 @@ static char *cpuname_lower[] = {
+ 
+ int detect(void)
+ {
+-   // return CPU_GENERIC;
+- return CPU_Z13; 
+-    
++  FILE *infile;
++  char buffer[512], *p;
++
++  p = (char *)NULL;
++  infile = fopen("/proc/sysinfo", "r");
++  while (fgets(buffer, sizeof(buffer), infile)){
++    if (!strncmp("Type", buffer, 4)){
++        p = strchr(buffer, ':') + 2;
++#if 0
++        fprintf(stderr, "%s\n", p);
++#endif
++        break;
++      }
++  }
++
++  fclose(infile);
++
++  if (strstr(p, "2964")) return CPU_Z13;
++  if (strstr(p, "2965")) return CPU_Z13;
++
++  return CPU_GENERIC;
+ }
+ 
+ void get_libname(void)
+-- 
+2.12.2
+
