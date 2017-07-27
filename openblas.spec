@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.19
-Release:        11%{?dist}
+Release:        12%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -655,6 +655,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Jul 27 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.2.19-12
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
+
 * Mon May 29 2017 Dan Horák <dan[at]danny.cz> - 0.2.19-11
 - add generic s390x support (#1442048)
 
