@@ -1,6 +1,6 @@
 %bcond_with system_lapack
 # Version of bundled lapack
-%global lapackver 3.5.0
+%global lapackver 3.7.0
 
 # DO NOT "CLEAN UP" OR MODIFY THIS SPEC FILE WITHOUT ASKING THE
 # MAINTAINER FIRST!
@@ -14,8 +14,8 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.2.19
-Release:        7%{?dist}
+Version:        0.2.20
+Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -29,8 +29,6 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.2.19-tests.patch
-# From https://github.com/xianyi/OpenBLAS/issues/1078#issuecomment-279527810
-Patch4:         openblas-0.2.19-fix_register_clobbers.patch
 
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
@@ -234,7 +232,6 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
-%patch4 -p1 -b .register_clobbers
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -660,6 +657,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Jul 28 2017 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-1
+- Update to 0.2.20.
+
 * Mon Feb 13 2017 Björn Esser <besser82@fedoraproject.org> - 0.2.19-7
 - Upgrade Patch4 to hopefully fully fix the issues on PPC64LE
 
