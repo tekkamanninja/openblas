@@ -546,8 +546,8 @@ done
 
 # Get rid of generated CMake config
 rm -rf %{buildroot}%{_libdir}/cmake
-# Get rid of generated pkgconfig file
-rm %{buildroot}/usr/lib/pkgconfig/openblas.pc
+# Get rid of generated pkgconfig
+rm -rf %{buildroot}%{_libdir}/pkgconfig
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
