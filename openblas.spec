@@ -1,6 +1,6 @@
 %bcond_with system_lapack
 # Version of bundled lapack
-%global lapackver 3.5.0
+%global lapackver 3.7.0
 
 # DO NOT "CLEAN UP" OR MODIFY THIS SPEC FILE WITHOUT ASKING THE
 # MAINTAINER FIRST!
@@ -14,8 +14,8 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.2.19
-Release:        4%{?dist}
+Version:        0.2.20
+Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -89,7 +89,7 @@ BuildRequires:  lapack64-static
 
 # Upstream supports the package only on these architectures.
 # Runtime processor detection is not available on other archs.
-ExclusiveArch:  x86_64 %{ix86} armv7hl %{power64} aarch64
+ExclusiveArch:  %{openblas_arches}
 
 %global base_description \
 OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD \
@@ -202,6 +202,7 @@ Requires:       %{name}-openmp64_%{?_isa} = %{version}-%{release}
 Requires:       %{name}-threads64_%{?_isa} = %{version}-%{release}
 Requires:       %{name}-serial64_%{?_isa} = %{version}-%{release}
 %endif
+Requires:       %{name}-srpm-macros
 
 %description devel
 %{base_description}
@@ -217,6 +218,7 @@ Requires:       %{name}-devel%{?_isa} = %{version}-%{release}
 %{base_description}
 
 This package contains the static libraries.
+
 
 %prep
 %setup -q -c -T
@@ -421,6 +423,9 @@ suffix="_power8"
 %ifarch aarch64
 suffix="_armv8"
 %endif
+%ifarch s390x
+suffix="_zarch_generic"
+%endif
 slibname=`basename %{buildroot}%{_libdir}/libopenblas${suffix}-*.so .so`
 mv %{buildroot}%{_libdir}/${slibname}.a %{buildroot}%{_libdir}/lib%{name}.a
 if [[ "$suffix" != "" ]]; then
@@ -541,6 +546,8 @@ done
 
 # Get rid of generated CMake config
 rm -rf %{buildroot}%{_libdir}/cmake
+# Get rid of generated pkgconfig
+rm -rf %{buildroot}%{_libdir}/pkgconfig
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
@@ -575,56 +582,45 @@ rm -rf %{buildroot}%{_libdir}/cmake
 rm -rf %{buildroot}
 
 %files
-# DO NOT REMOVE %defattr SECTIONS!
-%defattr(-,root,root,-)
 %doc serial/Changelog.txt serial/GotoBLAS* serial/LICENSE
 %{_libdir}/lib%{name}-*.so
 %{_libdir}/lib%{name}.so.*
 
 %files openmp
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}o-*.so
 %{_libdir}/lib%{name}o.so.*
 
 %files threads
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}p-*.so
 %{_libdir}/lib%{name}p.so.*
 
 %if %build64
 %files serial64
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}64-*.so
 %{_libdir}/lib%{name}64.so.*
 
 %files openmp64
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}o64-*.so
 %{_libdir}/lib%{name}o64.so.*
 
 %files threads64
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}p64-*.so
 %{_libdir}/lib%{name}p64.so.*
 
 %files serial64_
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}64_-*.so
 %{_libdir}/lib%{name}64_.so.*
 
 %files openmp64_
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}o64_-*.so
 %{_libdir}/lib%{name}o64_.so.*
 
 %files threads64_
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}p64_-*.so
 %{_libdir}/lib%{name}p64_.so.*
 %endif
 
 %files devel
-%defattr(-,root,root,-)
 %{_includedir}/%{name}/
 %{_libdir}/lib%{name}.so
 %{_libdir}/lib%{name}o.so
@@ -639,11 +635,9 @@ rm -rf %{buildroot}
 %endif
 
 %files Rblas
-%defattr(-,root,root,-)
 %{_libdir}/R/lib/libRblas.so
 
 %files static
-%defattr(-,root,root,-)
 %{_libdir}/lib%{name}.a
 %{_libdir}/lib%{name}o.a
 %{_libdir}/lib%{name}p.a
@@ -657,11 +651,38 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Jul 28 2017 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-1
+- Update to 0.2.20.
+
+* Thu Jul 27 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.2.19-12
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
+
+* Mon May 29 2017 Dan Horák <dan[at]danny.cz> - 0.2.19-11
+- add generic s390x support (#1442048)
+
+* Mon Mar 20 2017 Orion Poplawski <orion@cora.nwra.com> - 0.2.19-10
+- Drop openblas-srpm-macros version requirement
+
+* Mon Mar 20 2017 Orion Poplawski <orion@cora.nwra.com> - 0.2.19-9
+- Move openblas-srpm-macros to separate package
+
+* Wed Mar 15 2017 Orion Poplawski <orion@cora.nwra.com> - 0.2.19-8
+- Define %%openblas_arches for dependent packages to use
+
+* Mon Feb 13 2017 Björn Esser <besser82@fedoraproject.org> - 0.2.19-7
+- Upgrade Patch4 to hopefully fully fix the issues on PPC64LE
+
+* Fri Feb 03 2017 Björn Esser <besser82@fedoraproject.org> - 0.2.19-6
+- Add Patch4 to fix register clobbers (BZ #1417385)
+
+* Sat Jan 28 2017 Björn Esser <besser82@fedoraproject.org> - 0.2.19-5
+- Rebuilt for GCC-7
+
 * Wed Dec 14 2016 Tom Callaway <spot@fedoraproject.org> - 0.2.19-4
 - build a copy of openblas that thinks it is Rblas
   There are no code changes, except for libname and soname, it is identical to libopenblas.so.0
   Unfortunately, while R itself is fine using a symlink from libopenblas.so.0 to libRblas.so
-  the larger R ecosystem becomes unhappy in this scenario. 
+  the larger R ecosystem becomes unhappy in this scenario.
 
 * Thu Nov 03 2016 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.19-3
 - Fix linkage of OpenMP libraries (BZ #1391491).
