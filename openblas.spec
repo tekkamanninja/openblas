@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.20
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -87,9 +87,7 @@ BuildRequires:  lapack64-static
 %endif
 %endif
 
-# Upstream supports the package only on these architectures.
-# Runtime processor detection is not available on other archs.
-ExclusiveArch:  %{openblas_arches}
+ExclusiveArch:  x86_64 %{ix86} armv7hl %{power64} aarch64 s390x
 
 %global base_description \
 OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD \
@@ -202,7 +200,6 @@ Requires:       %{name}-openmp64_%{?_isa} = %{version}-%{release}
 Requires:       %{name}-threads64_%{?_isa} = %{version}-%{release}
 Requires:       %{name}-serial64_%{?_isa} = %{version}-%{release}
 %endif
-Requires:       %{name}-srpm-macros
 
 %description devel
 %{base_description}
@@ -651,6 +648,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Jul 28 2017 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-2
+- Don't use openblas_arches macro on distros older than rawhide.
+
 * Fri Jul 28 2017 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-1
 - Update to 0.2.20.
 
