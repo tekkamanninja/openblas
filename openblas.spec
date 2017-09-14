@@ -388,7 +388,7 @@ make -C threaded   $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_O
 # USE_THREAD determines use of SMP, not of pthreads
 COMMON="%{optflags} -fPIC -fopenmp -pthread"
 FCOMMON="$COMMON -frecursive"
-make -C openmp     $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libopenblaso"     $AVX $LAPACKE INTERFACE64=0 EXTRALIB="-fopenmp -pthread -lgfortran -lm"
+make -C openmp     $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libopenblaso"     $AVX $LAPACKE INTERFACE64=0
 
 %if %build64
 COMMON="%{optflags} -fPIC"
@@ -398,7 +398,7 @@ make -C threaded64 $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_O
 
 COMMON="%{optflags} -fPIC -fopenmp -pthread"
 FCOMMON="$COMMON -frecursive -fdefault-integer-8"
-make -C openmp64   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libopenblaso64"   $AVX $LAPACKE INTERFACE64=1 EXTRALIB="-fopenmp -pthread -lgfortran -lm"
+make -C openmp64   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libopenblaso64"   $AVX $LAPACKE INTERFACE64=1
 
 COMMON="%{optflags} -fPIC"
 FCOMMON="$COMMON -frecursive  -fdefault-integer-8"
@@ -407,7 +407,7 @@ make -C threaded64_ $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_
 
 COMMON="%{optflags} -fPIC -fopenmp -pthread"
 FCOMMON="$COMMON -frecursive -fdefault-integer-8"
-make -C openmp64_   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libopenblaso64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_ EXTRALIB="-fopenmp -pthread -lgfortran -lm"
+make -C openmp64_   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libopenblaso64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
 %endif
 
 %install
@@ -664,8 +664,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Wed Aug 30 2017 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-3
-- Fix build on EPEL 6.
+* Thu Sep 14 2017 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-3
+- Simplify spec, drop extra library args. Builds again on RHEL6.
 
 * Fri Jul 28 2017 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-2
 - Don't use openblas_arches macro on distros older than rawhide.
