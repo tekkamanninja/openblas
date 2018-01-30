@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.20
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -667,6 +667,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Jan 30 2018 Florian Weimer <fweimer@redhat.com> - 0.2.20-4
+- Rebuild for GCC 8
+
 * Thu Sep 14 2017 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-3
 - Simplify spec, dropping extra lib arguments.
 
