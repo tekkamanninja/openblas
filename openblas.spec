@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.20
-Release:        4%{?dist}
+Release:        6%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -30,7 +30,6 @@ Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.2.19-tests.patch
 
-BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:  gcc-gfortran
 BuildRequires:  perl-devel
@@ -594,9 +593,6 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %postun threads64_ -p /sbin/ldconfig
 %endif
 
-%clean
-rm -rf %{buildroot}
-
 %files
 %doc serial/Changelog.txt serial/GotoBLAS* serial/LICENSE
 %{_libdir}/lib%{name}-*.so
@@ -667,9 +663,15 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Wed Feb 14 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-4
+* Wed Feb 14 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-6
 - Drop arch-dependent buildrequires (BZ #1545201); no changes to package
   (only affects packages custom built with --with system_lapack).
+
+* Thu Feb 08 2018 Fedora Release Engineering <releng@fedoraproject.org> - 0.2.20-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
+
+* Tue Jan 30 2018 Florian Weimer <fweimer@redhat.com> - 0.2.20-4
+- Rebuild for GCC 8
 
 * Thu Sep 14 2017 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-3
 - Simplify spec, dropping extra lib arguments.
