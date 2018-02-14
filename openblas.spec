@@ -593,9 +593,6 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %postun threads64_ -p /sbin/ldconfig
 %endif
 
-%clean
-rm -rf %{buildroot}
-
 %files
 %doc serial/Changelog.txt serial/GotoBLAS* serial/LICENSE
 %{_libdir}/lib%{name}-*.so
