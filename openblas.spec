@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.20
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -52,9 +52,9 @@ BuildRequires:  /usr/bin/execstack
 # LAPACK
 %if %{with system_lapack}
 %if 0%{?rhel} == 5 || 0%{?rhel} == 6
-BuildRequires:  lapack-devel%{?_isa}
+BuildRequires:  lapack-devel
 %else
-BuildRequires:  lapack-static%{?_isa}
+BuildRequires:  lapack-static
 %endif
 # Do we have LAPACKE? (Needs at least lapack 3.4.0)
 %if 0%{?fedora}
@@ -667,6 +667,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Feb 14 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-4
+- Drop arch-dependent buildrequires (BZ #1545201); no changes to package
+  (only affects packages custom built with --with system_lapack).
+
 * Thu Sep 14 2017 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-3
 - Simplify spec, dropping extra lib arguments.
 
