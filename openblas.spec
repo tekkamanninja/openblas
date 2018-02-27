@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.20
-Release:        6%{?dist}
+Release:        7%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -30,7 +30,7 @@ Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.2.19-tests.patch
 
-
+BuildRequires:  gcc
 BuildRequires:  gcc-gfortran
 BuildRequires:  perl-devel
 
@@ -378,6 +378,7 @@ FCOMMON="%{optflags} -fPIC"
 %else
 FCOMMON="%{optflags} -fPIC -frecursive"
 %endif
+export LDFLAGS="%{build_ldflags}"
 
 make -C Rblas      $TARGET USE_THREAD=0 USEOPENMP=0 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libRblas" LIBSONAME="libRblas.so" $AVX $LAPACKE INTERFACE64=0
 
@@ -663,6 +664,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Tue Feb 27 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-7
+- Honor Fedora linker flags (BZ #1548750).
+
 * Wed Feb 14 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-6
 - Drop arch-dependent buildrequires (BZ #1545201); no changes to package
   (only affects packages custom built with --with system_lapack).
