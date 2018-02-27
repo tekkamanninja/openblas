@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.20
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -378,7 +378,8 @@ FCOMMON="%{optflags} -fPIC"
 %else
 FCOMMON="%{optflags} -fPIC -frecursive"
 %endif
-export LDFLAGS="%{build_ldflags}"
+# Use Fedora linker flags
+export LDFLAGS="%{__global_ldflags}"
 
 make -C Rblas      $TARGET USE_THREAD=0 USEOPENMP=0 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libRblas" LIBSONAME="libRblas.so" $AVX $LAPACKE INTERFACE64=0
 
@@ -664,6 +665,10 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Tue Feb 27 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-8
+- Use %%__global_ldflags instead of %%build_ldflags that doesn't work on
+  all distributions.
+
 * Tue Feb 27 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-7
 - Honor Fedora linker flags (BZ #1548750).
 
