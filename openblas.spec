@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.20
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -52,9 +52,9 @@ BuildRequires:  /usr/bin/execstack
 # LAPACK
 %if %{with system_lapack}
 %if 0%{?rhel} == 5 || 0%{?rhel} == 6
-BuildRequires:  lapack-devel%{?_isa}
+BuildRequires:  lapack-devel
 %else
-BuildRequires:  lapack-static%{?_isa}
+BuildRequires:  lapack-static
 %endif
 # Do we have LAPACKE? (Needs at least lapack 3.4.0)
 %if 0%{?fedora}
@@ -376,6 +376,8 @@ FCOMMON="%{optflags} -fPIC"
 %else
 FCOMMON="%{optflags} -fPIC -frecursive"
 %endif
+# Use Fedora linker flags
+export LDFLAGS="%{__global_ldflags}"
 
 make -C Rblas      $TARGET USE_THREAD=0 USEOPENMP=0 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libRblas" LIBSONAME="libRblas.so" $AVX $LAPACKE INTERFACE64=0
 
@@ -664,6 +666,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Feb 27 2017 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-4
+- No arched buildrequires (no change to binary packages).
+- Use Fedora linker flags (BZ #1548750).
+
 * Thu Sep 14 2017 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-3
 - Simplify spec, drop extra library args. Builds again on RHEL6.
 
