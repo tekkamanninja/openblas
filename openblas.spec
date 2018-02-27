@@ -666,7 +666,7 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Tue Feb 27 2017 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-4
+* Tue Feb 27 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-4
 - No arched buildrequires (no change to binary packages).
 - Use Fedora linker flags (BZ #1548750).
 
