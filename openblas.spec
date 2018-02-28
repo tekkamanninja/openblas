@@ -377,7 +377,9 @@ FCOMMON="%{optflags} -fPIC"
 FCOMMON="%{optflags} -fPIC -frecursive"
 %endif
 # Use Fedora linker flags
+%if 0%{?fedora} > 0 || 0%{?rhel} > 6
 export LDFLAGS="%{__global_ldflags}"
+%endif
 
 make -C Rblas      $TARGET USE_THREAD=0 USEOPENMP=0 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libRblas" LIBSONAME="libRblas.so" $AVX $LAPACKE INTERFACE64=0
 
