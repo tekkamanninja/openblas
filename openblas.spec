@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.20
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -70,15 +70,10 @@ Provides:       bundled(lapack) = %{lapackver}
 %endif
 
 # Build 64-bit interface binaries?
-%if 0%{?rhel} == 5 || 0%{?rhel} == 6
-# RPM too old to know __isa_bits in RHEL 5, and lapack64 doesn't exist in RHEL 6
-%global build64 0
-%else
 %if 0%{?__isa_bits} == 64
 %global build64 1
 %else
 %global build64 0
-%endif
 %endif
 
 %if %{with system_lapack}
@@ -668,6 +663,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sun Mar 04 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-5
+- Enable 64-bit interface packages on RHEL 6.
+
 * Tue Feb 27 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-4
 - No arched buildrequires (no change to binary packages).
 - Use Fedora linker flags (BZ #1548750).
