@@ -1,0 +1,23 @@
+From e453555d97732f1691c0f07378486e10ab04cd86 Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Mon, 19 Mar 2018 18:02:23 +0100
+Subject: [PATCH] Disable CPU affinity by default again
+
+This setting must have been changed unintentionally by my PR #1214 (probably leftover from unrelated tests)
+---
+ Makefile.rule | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile.rule b/Makefile.rule
+index 718f04090..62bf63df4 100644
+--- a/Makefile.rule
++++ b/Makefile.rule
+@@ -100,7 +100,7 @@ BUILD_LAPACK_DEPRECATED = 1
+ NO_WARMUP = 1
+ 
+ # If you want to disable CPU/Memory affinity on Linux.
+-#NO_AFFINITY = 1
++NO_AFFINITY = 1
+ 
+ # if you are compiling for Linux and you have more than 16 numa nodes or more than 256 cpus
+ # BIGNUMA = 1

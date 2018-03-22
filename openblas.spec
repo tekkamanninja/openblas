@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.2.20
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -29,6 +29,8 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.2.19-tests.patch
+# Disable CPU affinity, from upstream
+Patch4:         https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/1495.patch
 
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
@@ -226,6 +228,7 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
+%patch4 -p1 -b .affinity
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -663,6 +666,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Mar 22 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-6
+- Disable CPU affinity that was unintentionally enabled upstream (BZ #1558091).
+
 * Sun Mar 04 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-5
 - Enable 64-bit interface packages on RHEL 6.
 
