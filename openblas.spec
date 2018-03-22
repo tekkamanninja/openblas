@@ -666,7 +666,7 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 * Thu Mar 22 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-10
 - Disable CPU affinity unintentionally enabled upstream (BZ #1558091).
 
-* Wed Mar 04 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-9
+* Sun Mar 04 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-9
 - Clean up obsolete conditionals for 64 bit builds in spec file.
 
 * Tue Feb 27 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-8
