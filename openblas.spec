@@ -29,6 +29,8 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.2.19-tests.patch
+# Upstream pull 1572, fixes fail on ppc64le
+Patch4:         1572.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-gfortran
@@ -228,6 +230,7 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
+%patch4 -p1 -b .ppc64le
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
