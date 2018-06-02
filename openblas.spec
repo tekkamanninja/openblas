@@ -1,6 +1,6 @@
 %bcond_with system_lapack
 # Version of bundled lapack
-%global lapackver 3.7.0
+%global lapackver 3.8.0
 
 # DO NOT "CLEAN UP" OR MODIFY THIS SPEC FILE WITHOUT ASKING THE
 # MAINTAINER FIRST!
@@ -14,8 +14,8 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.2.20
-Release:        6%{?dist}
+Version:        0.3.0
+Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -29,10 +29,8 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.2.19-tests.patch
-# Disable CPU affinity, from upstream
-Patch4:         https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/1495.patch
-
-BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+# Fix build on ppc64le, from upstream
+Patch4:         https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/1572.patch
 
 BuildRequires:  gcc-gfortran
 BuildRequires:  perl-devel
@@ -228,7 +226,7 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
-%patch4 -p1 -b .affinity
+%patch4 -p1 -b .ppc64le
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -666,6 +664,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sat Jun 02 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.0-1
+- Update to 0.3.0.
+
 * Thu Mar 22 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.2.20-6
 - Disable CPU affinity that was unintentionally enabled upstream (BZ #1558091).
 
