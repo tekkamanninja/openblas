@@ -14,7 +14,7 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.3.0
+Version:        0.3.1
 Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
@@ -29,8 +29,6 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.2.19-tests.patch
-# Fix build on ppc64le, from upstream
-Patch4:         https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/1572.patch
 
 BuildRequires:  gcc-gfortran
 BuildRequires:  perl-devel
@@ -99,6 +97,15 @@ Group:		Development/Libraries
 
 %description Rblas
 %{base_description}
+
+%package serial
+Summary:        An optimized BLAS library based on GotoBLAS2, serial version
+Group:          Development/Libraries
+
+%description serial
+%{base_description}
+
+This package contains the sequential library.
 
 %package openmp
 Summary:        An optimized BLAS library based on GotoBLAS2, OpenMP version
@@ -185,6 +192,7 @@ This package contains the library compiled with threading support and
 Summary:        Development headers and libraries for OpenBLAS
 Group:          Development/Libraries
 Requires:       %{name}%{?_isa} = %{version}-%{release}
+Requires:       %{name}-serial%{?_isa} = %{version}-%{release}
 Requires:       %{name}-openmp%{?_isa} = %{version}-%{release}
 Requires:       %{name}-threads%{?_isa} = %{version}-%{release}
 %if %build64
@@ -226,7 +234,6 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
-%patch4 -p1 -b .ppc64le
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -338,7 +345,7 @@ LAPACKE="NO_LAPACKE=1"
 NMAX="NUM_THREADS=128"
 
 %ifarch %{ix86} x86_64
-TARGET="TARGET=CORE2 DYNAMIC_ARCH=1"
+TARGET="TARGET=CORE2 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 
 # Compability for old versions of GCC
 %if 0%{?rhel} == 5
@@ -596,6 +603,8 @@ rm -rf %{buildroot}
 
 %files
 %doc serial/Changelog.txt serial/GotoBLAS* serial/LICENSE
+
+%files serial
 %{_libdir}/lib%{name}-*.so
 %{_libdir}/lib%{name}.so.*
 
@@ -664,6 +673,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sun Jul 01 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.1-1
+- Split sequential libraries into subpackage.
+- Update to 0.3.1.
+
 * Sat Jun 02 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.0-1
 - Update to 0.3.0.
 
