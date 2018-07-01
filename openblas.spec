@@ -14,8 +14,8 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.3.0
-Release:        2%{?dist}
+Version:        0.3.1
+Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -364,7 +364,7 @@ LAPACKE="NO_LAPACKE=1"
 NMAX="NUM_THREADS=128"
 
 %ifarch %{ix86} x86_64
-TARGET="TARGET=CORE2 DYNAMIC_ARCH=1"
+TARGET="TARGET=CORE2 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 
 # Compability for old versions of GCC
 %if 0%{?rhel} == 5
@@ -688,6 +688,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Sun Jul 01 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.1-1
+- Update to 0.3.1.
+
 * Mon Jun 11 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.0-2
 - Split sequential libraries from core package to openblas-serial.
 
