@@ -1,0 +1,23 @@
+From 9d15a3bd16d5548701474d6ecf618b669a4ff394 Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Mon, 2 Jul 2018 14:40:41 +0200
+Subject: [PATCH] Fix typo that broke compilation with DYNAMIC_ARCH and NO_AVX2
+
+fixes 1659
+---
+ driver/others/dynamic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/driver/others/dynamic.c b/driver/others/dynamic.c
+index 13794207c..d727f1045 100644
+--- a/driver/others/dynamic.c
++++ b/driver/others/dynamic.c
+@@ -510,7 +510,7 @@ static gotoblas_t *get_coretype(void){
+ #ifndef NO_AVX2
+ 	  return &gotoblas_HASWELL;
+ #else
+-	  return &gotblas_SANDYBRIDGE;
++	  return &gotoblas_SANDYBRIDGE;
+ #endif
+ 	  else
+ 	  return &gotoblas_NEHALEM;

@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -29,6 +29,8 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.2.19-tests.patch
+# Fix build on RHEL6
+Patch4:         https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/1660.patch
 
 BuildRequires:  gcc-gfortran
 BuildRequires:  perl-devel
@@ -234,6 +236,7 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
+%patch4 -p1 -b .dynamic
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -673,6 +676,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Jul 02 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.1-2
+- Fix build on EPEL 6.
+
 * Sun Jul 01 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.1-1
 - Split sequential libraries into subpackage.
 - Update to 0.3.1.
