@@ -29,6 +29,8 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.2.19-tests.patch
+# Fix crash with multiple instances
+Patch4:         https://github.com/xianyi/OpenBLAS/pull/1695.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-gfortran
@@ -250,6 +252,7 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
+%patch4 -p1 -b .multiinst
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -685,6 +688,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Sun Jul 22 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.1-3
+- Fix crash with multiple instances (BZ #1605231).
+
 * Fri Jul 13 2018 Fedora Release Engineering <releng@fedoraproject.org> - 0.3.1-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_29_Mass_Rebuild
 
