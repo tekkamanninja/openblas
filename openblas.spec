@@ -679,8 +679,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Mon Jul 02 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.1-3
-- Fix crash with multiple instances.
+* Sun Jul 22 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.1-3
+- Fix crash with multiple instances (BZ #1605231).
 
 * Mon Jul 02 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.1-2
 - Fix build on EPEL 6.
