@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.1
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -31,6 +31,8 @@ Patch2:         openblas-0.2.15-constructor.patch
 Patch3:         openblas-0.2.19-tests.patch
 # Fix build on RHEL6
 Patch4:         https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/1660.patch
+# Fix crash with multiple instances
+Patch5:         https://github.com/xianyi/OpenBLAS/pull/1695.patch
 
 BuildRequires:  gcc-gfortran
 BuildRequires:  perl-devel
@@ -237,6 +239,7 @@ cd OpenBLAS-%{version}
 %endif
 %patch3 -p1 -b .tests
 %patch4 -p1 -b .dynamic
+%patch5 -p1 -b .multiinst
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -676,6 +679,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Jul 02 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.1-3
+- Fix crash with multiple instances.
+
 * Mon Jul 02 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.1-2
 - Fix build on EPEL 6.
 
