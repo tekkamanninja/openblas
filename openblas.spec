@@ -461,7 +461,7 @@ suffix="_power8"
 suffix="_armv8"
 %endif
 %ifarch s390x
-suffix="_zarch_generic"
+suffix="__z13"
 %endif
 slibname=`basename %{buildroot}%{_libdir}/libopenblas${suffix}-*.so .so`
 mv %{buildroot}%{_libdir}/${slibname}.a %{buildroot}%{_libdir}/lib%{name}.a
