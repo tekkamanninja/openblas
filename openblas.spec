@@ -14,13 +14,13 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.3.1
-Release:        3%{?dist}
+Version:        0.3.2
+Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
-Source0:        https://github.com/xianyi/OpenBLAS/archive/v%{version}.tar.gz
+Source0:        https://github.com/xianyi/OpenBLAS/archive/v%{version}/openblas-%{version}.tar.gz
 # Use system lapack
 Patch0:         openblas-0.2.15-system_lapack.patch
 # Drop extra p from threaded library name
@@ -29,10 +29,6 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.2.19-tests.patch
-# Fix build on RHEL6
-Patch4:         https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/1660.patch
-# Fix crash with multiple instances
-Patch5:         https://github.com/xianyi/OpenBLAS/pull/1695.patch
 
 BuildRequires:  gcc-gfortran
 BuildRequires:  perl-devel
@@ -238,8 +234,6 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
-%patch4 -p1 -b .dynamic
-%patch5 -p1 -b .multiinst
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -679,6 +673,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Aug 02 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.2-1
+- Update to 0.3.2.
+
 * Sun Jul 22 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.1-3
 - Fix crash with multiple instances (BZ #1605231).
 
