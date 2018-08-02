@@ -28,7 +28,7 @@ Patch1:         openblas-0.2.5-libname.patch
 # Don't use constructor priorities on too old architectures
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
-Patch3:         openblas-0.2.19-tests.patch
+Patch3:         openblas-0.3.2-tests.patch
 
 BuildRequires:  gcc-gfortran
 BuildRequires:  perl-devel
@@ -673,7 +673,7 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Wed Aug 02 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.2-1
+* Thu Aug 02 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.2-1
 - Update to 0.3.2.
 
 * Sun Jul 22 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.1-3
