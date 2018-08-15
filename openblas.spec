@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.2
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -387,6 +387,9 @@ TARGET="TARGET=POWER8 DYNAMIC_ARCH=0"
 %ifarch aarch64
 TARGET="TARGET=ARMV8 DYNAMIC_ARCH=0"
 %endif
+%ifarch s390x
+TARGET="TARGET=ZARCH_GENERIC DYNAMIC_ARCH=0"
+%endif
 
 %if 0%{?rhel} == 5
 # Gfortran too old to recognize -frecursive
@@ -458,7 +461,7 @@ suffix="_power8"
 suffix="_armv8"
 %endif
 %ifarch s390x
-suffix="_z13"
+suffix="_zarch_generic"
 %endif
 slibname=`basename %{buildroot}%{_libdir}/libopenblas${suffix}-*.so .so`
 mv %{buildroot}%{_libdir}/${slibname}.a %{buildroot}%{_libdir}/lib%{name}.a
@@ -685,6 +688,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Wed Aug 15 2018 Dan Horák <dan[at]danny.cz> - 0.3.2-2
+- Explicitly set the target to generic on s390x to avoid surprises (#1615760)
+
 * Thu Aug 02 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.2-1
 - Update to 0.3.2.
 
