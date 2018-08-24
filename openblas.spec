@@ -29,6 +29,8 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.2-tests.patch
+# Crude hack to avoid problems with threading code (see https://github.com/xianyi/OpenBLAS/issues/1735)
+Patch4:         openblas-0.3.2-threads.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-gfortran
@@ -250,6 +252,7 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
+%patch4 -p1 -b .threads
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -689,6 +692,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Fri Aug 24 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.2-4
+- Patch to avoid threading issues.
+
 * Fri Aug 24 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.2-3
 - Add missing %%{optflags} to COMMON (see discussion in #1619074).
 
