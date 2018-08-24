@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.2
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -396,6 +396,7 @@ TARGET="TARGET=ZARCH_GENERIC DYNAMIC_ARCH=0"
 COMMON="%{optflags} -fPIC"
 FCOMMON="%{optflags} -fPIC"
 %else
+COMMON="%{optflags} -fPIC"
 FCOMMON="%{optflags} -fPIC -frecursive"
 %endif
 # Use Fedora linker flags
@@ -688,6 +689,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Thu Aug 02 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.2-3
+- Add missing %%{optflags} to COMMON (see discussion in #1619074).
+
 * Wed Aug 15 2018 Dan Horák <dan[at]danny.cz> - 0.3.2-2
 - Explicitly set the target to generic on s390x to avoid surprises (#1615760)
 
