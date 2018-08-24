@@ -1,0 +1,12 @@
+diff -up OpenBLAS-0.3.2/driver/others/memory.c.threads OpenBLAS-0.3.2/driver/others/memory.c
+--- OpenBLAS-0.3.2/driver/others/memory.c.threads	2018-07-30 07:25:01.000000000 +0200
++++ OpenBLAS-0.3.2/driver/others/memory.c	2018-08-24 18:45:36.826078344 +0200
+@@ -497,7 +497,7 @@ static const int allocation_block_size =
+ #if defined(SMP) && !defined(USE_OPENMP_UNUSED)
+ /* This is the number of threads than can be spawned by the server, which is the
+    server plus the number of threads in the thread pool */
+-#  define MAX_ALLOCATING_THREADS MAX_CPU_NUMBER * 2 * MAX_PARALLEL_NUMBER * 2
++#  define MAX_ALLOCATING_THREADS 8192
+ static int next_memory_table_pos = 0;
+ #  if defined(HAS_COMPILER_TLS)
+ /* Use compiler generated thread-local-storage */

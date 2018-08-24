@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.2
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -29,6 +29,8 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.2-tests.patch
+# Avoid problems with threading
+Patch4:         openblas-0.3.2-threads.patch
 
 BuildRequires:  gcc-gfortran
 BuildRequires:  perl-devel
@@ -234,6 +236,7 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
+%patch4 -p1 -b .threads
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -371,12 +374,16 @@ TARGET="TARGET=POWER8 DYNAMIC_ARCH=0"
 %ifarch aarch64
 TARGET="TARGET=ARMV8 DYNAMIC_ARCH=0"
 %endif
+%ifarch s390x
+TARGET="TARGET=ZARCH_GENERIC DYNAMIC_ARCH=0"
+%endif
 
 %if 0%{?rhel} == 5
 # Gfortran too old to recognize -frecursive
 COMMON="%{optflags} -fPIC"
 FCOMMON="%{optflags} -fPIC"
 %else
+COMMON="%{optflags} -fPIC"
 FCOMMON="%{optflags} -fPIC -frecursive"
 %endif
 # Use Fedora linker flags
@@ -673,6 +680,11 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Aug 24 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.2-2
+- Use %%{optflags} on all object files.
+- Add proper s390x build flags.
+- Patch for threading issue.
+
 * Thu Aug 02 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.2-1
 - Update to 0.3.2.
 
