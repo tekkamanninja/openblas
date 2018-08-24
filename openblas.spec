@@ -689,7 +689,7 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
-* Thu Aug 24 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.2-3
+* Fri Aug 24 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.2-3
 - Add missing %%{optflags} to COMMON (see discussion in #1619074).
 
 * Wed Aug 15 2018 Dan Horák <dan[at]danny.cz> - 0.3.2-2
