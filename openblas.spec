@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.2
-Release:        3%{?dist}
+Release:        5%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -31,6 +31,8 @@ Patch2:         openblas-0.2.15-constructor.patch
 Patch3:         openblas-0.3.2-tests.patch
 # Crude hack to avoid problems with threading code (see https://github.com/xianyi/OpenBLAS/issues/1735)
 Patch4:         openblas-0.3.2-threads.patch
+# https://github.com/xianyi/OpenBLAS/commit/e11126b26ada8d97b4a522e461ca92311653bfc6
+Patch5:         openblas-0.3.2-zarch.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-gfortran
@@ -253,6 +255,7 @@ cd OpenBLAS-%{version}
 %endif
 %patch3 -p1 -b .tests
 %patch4 -p1 -b .threads
+%patch5 -p1 -b .zarch
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -692,6 +695,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Wed Aug 29 2018 Dan Horák <dan[at]danny.cz> - 0.3.2-5
+- Fix precision in generic target on s390x
+
 * Fri Aug 24 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.2-4
 - Patch to avoid threading issues.
 
