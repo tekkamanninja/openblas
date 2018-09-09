@@ -14,8 +14,8 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.3.2
-Release:        2%{?dist}
+Version:        0.3.3
+Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -29,8 +29,6 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.2-tests.patch
-# Avoid problems with threading
-Patch4:         openblas-0.3.2-threads.patch
 
 BuildRequires:  gcc-gfortran
 BuildRequires:  perl-devel
@@ -236,7 +234,6 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
-%patch4 -p1 -b .threads
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -680,6 +677,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sun Sep 09 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.3-1
+- Update to 0.3.3.
+
 * Fri Aug 24 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.2-2
 - Use %%{optflags} on all object files.
 - Add proper s390x build flags.
