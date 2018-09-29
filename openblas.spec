@@ -29,6 +29,8 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.2-tests.patch
+# Fix BZ #1634060
+Patch4:         openblas-0.3.3-tls.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-gfortran
@@ -250,6 +252,7 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
+%patch4 -p1 -b .tls
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -689,6 +692,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Sat Sep 29 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.3-2
+- Fix segfault (BZ #1634060).
+
 * Sun Sep 09 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.3-1
 - Update to 0.3.3.
 
