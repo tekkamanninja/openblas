@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.3
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
 License:        BSD
@@ -35,6 +35,7 @@ Patch4:         openblas-0.3.3-tls.patch
 BuildRequires:  gcc
 BuildRequires:  gcc-gfortran
 BuildRequires:  perl-devel
+BuildRequires:  multilib-rpm-config
 
 # Do we have execstack?
 %if 0%{?rhel} == 7
@@ -448,6 +449,9 @@ make -C serial USE_THREAD=0 PREFIX=%{buildroot} OPENBLAS_LIBRARY_DIR=%{buildroot
 cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 %endif
 
+# Fix i686-x86_64 multilib difference
+%multilib_fix_c_header --file %{_includedir}/openblas/openblas_config.h
+
 # Fix name of libraries
 %ifarch armv7hl
 suffix="_armv7"
@@ -583,6 +587,9 @@ ln -sf ${pname64_}.so lib%{name}p64_.so.0
 for lib in %{buildroot}%{_libdir}/libopenblas*.so; do
  execstack -c $lib
 done
+for lib in %{buildroot}%{_libdir}/R/lib/libRblas*.so; do
+ execstack -c $lib
+done
 %endif
 
 # Get rid of generated CMake config
@@ -692,6 +699,10 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Fri Nov 09 2018 Nikola Forró <nforro@redhat.com> - 0.3.3-3
+- Fix i686-x86_64 multilib difference.
+- Get rid of executable stack in libRblas.so.
+
 * Sat Sep 29 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.3-2
 - Fix segfault (BZ #1634060).
 
