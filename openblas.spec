@@ -696,7 +696,7 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
-* Mon Jan 07 2018 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.5-1
+* Mon Jan 07 2019 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.5-1
 - Update to 0.3.5, with dynamic CPU detection on aarch64.
 
 * Fri Nov 09 2018 Nikola Forró <nforro@redhat.com> - 0.3.3-3
