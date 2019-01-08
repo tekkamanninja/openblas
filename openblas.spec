@@ -25,8 +25,8 @@ Source0:        https://github.com/xianyi/OpenBLAS/archive/v%{version}/openblas-
 Patch0:         openblas-0.2.15-system_lapack.patch
 # Drop extra p from threaded library name
 Patch1:         openblas-0.2.5-libname.patch
-# Don't use constructor priorities on too old architectures
-Patch2:         openblas-0.2.15-constructor.patch
+# EPEL7: patch out -mtune from aarch64 architectures since GCC is too old to support them
+Patch2:         openblas-0.3.5-epel.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.2-tests.patch
 
@@ -230,8 +230,8 @@ cd OpenBLAS-%{version}
 %patch0 -p1 -b .system_lapack
 %endif
 %patch1 -p1 -b .libname
-%if 0%{?rhel} == 5
-%patch2 -p1 -b .constructor
+%if 0%{?rhel} == 7
+%patch2 -p1 -b .epel
 %endif
 %patch3 -p1 -b .tests
 

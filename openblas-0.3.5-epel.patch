@@ -1,0 +1,54 @@
+diff -up OpenBLAS-0.3.5/Makefile.arm64.epel OpenBLAS-0.3.5/Makefile.arm64
+--- OpenBLAS-0.3.5/Makefile.arm64.epel	2018-12-31 23:09:59.000000000 +0100
++++ OpenBLAS-0.3.5/Makefile.arm64	2019-01-08 10:38:01.149223828 +0100
+@@ -5,36 +5,36 @@ FCOMMON_OPT += -march=armv8-a
+ endif
+ 
+ ifeq ($(CORE), CORTEXA53)
+-CCOMMON_OPT += -march=armv8-a -mtune=cortex-a53
+-FCOMMON_OPT += -march=armv8-a -mtune=cortex-a53
++CCOMMON_OPT += -march=armv8-a
++FCOMMON_OPT += -march=armv8-a
+ endif
+ 
+ ifeq ($(CORE), CORTEXA57)
+-CCOMMON_OPT += -march=armv8-a -mtune=cortex-a57
+-FCOMMON_OPT += -march=armv8-a -mtune=cortex-a57
++CCOMMON_OPT += -march=armv8-a
++FCOMMON_OPT += -march=armv8-a
+ endif
+ 
+ ifeq ($(CORE), CORTEXA72)
+-CCOMMON_OPT += -march=armv8-a -mtune=cortex-a72
+-FCOMMON_OPT += -march=armv8-a -mtune=cortex-a72
++CCOMMON_OPT += -march=armv8-a
++FCOMMON_OPT += -march=armv8-a
+ endif
+ 
+ ifeq ($(CORE), CORTEXA73)
+-CCOMMON_OPT += -march=armv8-a -mtune=cortex-a73
+-FCOMMON_OPT += -march=armv8-a -mtune=cortex-a73
++CCOMMON_OPT += -march=armv8-a
++FCOMMON_OPT += -march=armv8-a
+ endif
+ 
+ ifeq ($(CORE), THUNDERX)
+-CCOMMON_OPT += -march=armv8-a -mtune=thunderx
+-FCOMMON_OPT += -march=armv8-a -mtune=thunderx
++CCOMMON_OPT += -march=armv8-a
++FCOMMON_OPT += -march=armv8-a
+ endif
+ 
+ ifeq ($(CORE), FALKOR)
+-CCOMMON_OPT += -march=armv8-a -mtune=falkor
+-FCOMMON_OPT += -march=armv8-a -mtune=falkor
++CCOMMON_OPT += -march=armv8-a
++FCOMMON_OPT += -march=armv8-a
+ endif
+ 
+ ifeq ($(CORE), THUNDERX2T99)
+-CCOMMON_OPT += -march=armv8.1-a -mtune=thunderx2t99
+-FCOMMON_OPT += -march=armv8.1-a -mtune=thunderx2t99
++CCOMMON_OPT += -march=armv8.1-a
++FCOMMON_OPT += -march=armv8.1-a
+ endif
