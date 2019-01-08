@@ -1,3 +1,16 @@
+diff -up OpenBLAS-0.3.5/kernel/arm64/KERNEL.THUNDERX.epel OpenBLAS-0.3.5/kernel/arm64/KERNEL.THUNDERX
+--- OpenBLAS-0.3.5/kernel/arm64/KERNEL.THUNDERX.epel	2018-12-31 23:09:59.000000000 +0100
++++ OpenBLAS-0.3.5/kernel/arm64/KERNEL.THUNDERX	2019-01-08 14:32:56.114498716 +0100
+@@ -46,7 +46,8 @@ CCOPYKERNEL  = copy.S
+ ZCOPYKERNEL  = copy.S
+ 
+ SDOTKERNEL   = dot_thunderx.c
+-DDOTKERNEL   = ddot_thunderx.c
++#Missing intrinsic in GCC (upstream issue #1952)
++#DDOTKERNEL   = ddot_thunderx.c
+ CDOTKERNEL   = zdot.S
+ ZDOTKERNEL   = zdot.S
+ DSDOTKERNEL  = dot.S
 diff -up OpenBLAS-0.3.5/Makefile.arm64.epel OpenBLAS-0.3.5/Makefile.arm64
 --- OpenBLAS-0.3.5/Makefile.arm64.epel	2018-12-31 23:09:59.000000000 +0100
 +++ OpenBLAS-0.3.5/Makefile.arm64	2019-01-08 10:56:13.749547863 +0100
