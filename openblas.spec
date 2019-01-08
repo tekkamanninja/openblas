@@ -432,6 +432,7 @@ cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 %endif
 
 # Fix name of libraries
+suffix=""
 %ifarch armv7hl
 suffix="_armv7"
 %endif
@@ -445,7 +446,7 @@ suffix="_power7"
 suffix="_power8"
 %endif
 %ifarch aarch64
-suffix="_armv8"
+# Dynamic CPU detection so no suffix
 %endif
 %ifarch s390x
 suffix="_zarch_generic"
