@@ -1,6 +1,6 @@
 diff -up OpenBLAS-0.3.5/Makefile.arm64.epel OpenBLAS-0.3.5/Makefile.arm64
 --- OpenBLAS-0.3.5/Makefile.arm64.epel	2018-12-31 23:09:59.000000000 +0100
-+++ OpenBLAS-0.3.5/Makefile.arm64	2019-01-08 10:38:01.149223828 +0100
++++ OpenBLAS-0.3.5/Makefile.arm64	2019-01-08 10:56:13.749547863 +0100
 @@ -5,36 +5,36 @@ FCOMMON_OPT += -march=armv8-a
  endif
  
@@ -49,6 +49,6 @@ diff -up OpenBLAS-0.3.5/Makefile.arm64.epel OpenBLAS-0.3.5/Makefile.arm64
  ifeq ($(CORE), THUNDERX2T99)
 -CCOMMON_OPT += -march=armv8.1-a -mtune=thunderx2t99
 -FCOMMON_OPT += -march=armv8.1-a -mtune=thunderx2t99
-+CCOMMON_OPT += -march=armv8.1-a
-+FCOMMON_OPT += -march=armv8.1-a
++CCOMMON_OPT += -march=armv8-a
++FCOMMON_OPT += -march=armv8-a
  endif
