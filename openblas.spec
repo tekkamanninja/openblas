@@ -595,33 +595,23 @@ rm -rf %{buildroot}%{_libdir}/cmake
 # Get rid of generated pkgconfig
 rm -rf %{buildroot}%{_libdir}/pkgconfig
 
-%post -p /sbin/ldconfig
-%postun -p /sbin/ldconfig
+%ldconfig_scriptlets
 
-%post openmp -p /sbin/ldconfig
-%postun openmp -p /sbin/ldconfig
+%ldconfig_scriptlets openmp
 
-%post Rblas -p /sbin/ldconfig
-%postun Rblas -p /sbin/ldconfig
+%ldconfig_scriptlets Rblas
 
-%post threads -p /sbin/ldconfig
-%postun threads -p /sbin/ldconfig
+%ldconfig_scriptlets threads
 
 %if %build64
-%post openmp64 -p /sbin/ldconfig
-%postun openmp64 -p /sbin/ldconfig
-%post openmp64_ -p /sbin/ldconfig
-%postun openmp64_ -p /sbin/ldconfig
+%ldconfig_scriptlets openmp64
+%ldconfig_scriptlets openmp64_
 
-%post serial64 -p /sbin/ldconfig
-%postun serial64 -p /sbin/ldconfig
-%post serial64_ -p /sbin/ldconfig
-%postun serial64_ -p /sbin/ldconfig
+%ldconfig_scriptlets serial64
+%ldconfig_scriptlets serial64_
 
-%post threads64 -p /sbin/ldconfig
-%postun threads64 -p /sbin/ldconfig
-%post threads64_ -p /sbin/ldconfig
-%postun threads64_ -p /sbin/ldconfig
+%ldconfig_scriptlets threads64
+%ldconfig_scriptlets threads64_
 %endif
 
 %files
