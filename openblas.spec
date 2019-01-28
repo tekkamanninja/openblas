@@ -17,7 +17,6 @@ Name:           openblas
 Version:        0.3.5
 Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
-Group:          Development/Libraries
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
 Source0:        https://github.com/xianyi/OpenBLAS/archive/v%{version}/openblas-%{version}.tar.gz
@@ -97,14 +96,12 @@ Computational Science, ISCAS. http://www.rdcps.ac.cn
 
 %package Rblas
 Summary:        A version of OpenBLAS for R to use as libRblas
-Group:          Development/Libraries
 
 %description Rblas
 %{base_description}
 
 %package serial
 Summary:        An optimized BLAS library based on GotoBLAS2, serial version
-Group:          Development/Libraries
 Requires:       %{name} = %{version}-%{release}
 
 %description serial
@@ -115,7 +112,6 @@ integer interface.
 
 %package openmp
 Summary:        An optimized BLAS library based on GotoBLAS2, OpenMP version
-Group:          Development/Libraries
 Requires:       %{name} = %{version}-%{release}
 
 %description openmp
@@ -126,7 +122,6 @@ This package contains the library compiled with OpenMP support with
 
 %package threads
 Summary:        An optimized BLAS library based on GotoBLAS2, pthreads version
-Group:          Development/Libraries
 Requires:       %{name} = %{version}-%{release}
 
 %description threads
@@ -138,7 +133,6 @@ a 32-bit integer interface.
 %if %build64
 %package serial64
 Summary:        An optimized BLAS library based on GotoBLAS2, serial version
-Group:          Development/Libraries
 Requires:       %{name} = %{version}-%{release}
 
 %description serial64
@@ -149,7 +143,6 @@ integer interface.
 
 %package openmp64
 Summary:        An optimized BLAS library based on GotoBLAS2, OpenMP version
-Group:          Development/Libraries
 Requires:       %{name} = %{version}-%{release}
 
 %description openmp64
@@ -160,7 +153,6 @@ This package contains the library compiled with OpenMP support and
 
 %package threads64
 Summary:        An optimized BLAS library based on GotoBLAS2, pthreads version
-Group:          Development/Libraries
 Requires:       %{name} = %{version}-%{release}
 
 %description threads64
@@ -171,7 +163,6 @@ This package contains the library compiled with threading support and
 
 %package serial64_
 Summary:        An optimized BLAS library based on GotoBLAS2, serial version
-Group:          Development/Libraries
 Requires:       %{name} = %{version}-%{release}
 
 %description serial64_
@@ -182,7 +173,6 @@ integer interface and a symbol name suffix.
 
 %package openmp64_
 Summary:        An optimized BLAS library based on GotoBLAS2, OpenMP version
-Group:          Development/Libraries
 Requires:       %{name} = %{version}-%{release}
 
 %description openmp64_
@@ -193,7 +183,6 @@ This package contains the library compiled with OpenMP support and
 
 %package threads64_
 Summary:        An optimized BLAS library based on GotoBLAS2, pthreads version
-Group:          Development/Libraries
 Requires:       %{name} = %{version}-%{release}
 
 %description threads64_
@@ -206,7 +195,6 @@ This package contains the library compiled with threading support and
 
 %package devel
 Summary:        Development headers and libraries for OpenBLAS
-Group:          Development/Libraries
 Requires:       %{name}%{?_isa} = %{version}-%{release}
 Requires:       %{name}-serial%{?_isa} = %{version}-%{release}
 Requires:       %{name}-openmp%{?_isa} = %{version}-%{release}
@@ -228,7 +216,6 @@ This package contains the development headers and libraries.
 
 %package static
 Summary:        Static version of OpenBLAS
-Group:          Development/Libraries
 Requires:       %{name}-devel%{?_isa} = %{version}-%{release}
 
 %description static
