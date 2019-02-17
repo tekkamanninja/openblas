@@ -247,12 +247,12 @@ cd OpenBLAS-%{version}
 %endif
 %patch3 -p1 -b .tests
 
-%patch10 -p0
-%patch11 -p0
-%patch12 -p0
-%patch13 -p0
-%patch14 -p0
-%patch15 -p0
+%patch10 -p1
+%patch11 -p1
+%patch12 -p1
+%patch13 -p1
+%patch14 -p1
+%patch15 -p1
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
