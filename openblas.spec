@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.5
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
@@ -37,6 +37,9 @@ Patch13:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pul
 Patch14:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2023.patch
 Patch15:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2024.patch
 Patch16:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2028.patch
+Patch17:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/1965.patch
+Patch18:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/1966.patch
+Patch19:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/1967.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-gfortran
@@ -255,6 +258,9 @@ cd OpenBLAS-%{version}
 %patch14 -p1
 %patch15 -p1
 %patch16 -p1
+%patch17 -p1
+%patch18 -p1
+%patch19 -p1
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -691,6 +697,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Tue Feb 26 2019 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.5-5
+- Even more assembly kernel patches.
+
 * Mon Feb 25 2019 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.5-4
 - Another assembly kernel patch.
 
