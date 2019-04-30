@@ -14,8 +14,8 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.3.5
-Release:        5%{?dist}
+Version:        0.3.6
+Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
@@ -28,18 +28,6 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.2-tests.patch
-
-# Fix assembly code
-Patch10:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2010.patch
-Patch11:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2018.patch
-Patch12:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2019.patch
-Patch13:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2021.patch
-Patch14:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2023.patch
-Patch15:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2024.patch
-Patch16:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2028.patch
-Patch17:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/1965.patch
-Patch18:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/1966.patch
-Patch19:        https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/1967.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-gfortran
@@ -250,17 +238,6 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
-
-%patch10 -p1
-%patch11 -p1
-%patch12 -p1
-%patch13 -p1
-%patch14 -p1
-%patch15 -p1
-%patch16 -p1
-%patch17 -p1
-%patch18 -p1
-%patch19 -p1
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -697,6 +674,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Tue Apr 30 2019 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.6-1
+- Update to 0.3.6.
+
 * Tue Feb 26 2019 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.5-5
 - Even more assembly kernel patches.
 
