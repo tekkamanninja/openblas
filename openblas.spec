@@ -14,7 +14,7 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.3.5
+Version:        0.3.6
 Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
@@ -678,6 +678,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Apr 30 2019 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.6-1
+- Update to 0.3.6.
+
 * Mon Jan 07 2019 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.5-1
 - Update to 0.3.5, enabling dynamic CPU detection on aarch64.
 
