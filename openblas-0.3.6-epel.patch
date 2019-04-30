@@ -1,6 +1,6 @@
-diff -up OpenBLAS-0.3.5/kernel/arm64/KERNEL.THUNDERX.epel OpenBLAS-0.3.5/kernel/arm64/KERNEL.THUNDERX
---- OpenBLAS-0.3.5/kernel/arm64/KERNEL.THUNDERX.epel	2018-12-31 23:09:59.000000000 +0100
-+++ OpenBLAS-0.3.5/kernel/arm64/KERNEL.THUNDERX	2019-01-08 14:32:56.114498716 +0100
+diff -up OpenBLAS-0.3.6/kernel/arm64/KERNEL.THUNDERX.epel OpenBLAS-0.3.6/kernel/arm64/KERNEL.THUNDERX
+--- OpenBLAS-0.3.6/kernel/arm64/KERNEL.THUNDERX.epel	2019-04-29 19:22:19.000000000 +0200
++++ OpenBLAS-0.3.6/kernel/arm64/KERNEL.THUNDERX	2019-04-30 12:25:52.228300941 +0200
 @@ -46,7 +46,8 @@ CCOPYKERNEL  = copy.S
  ZCOPYKERNEL  = copy.S
  
@@ -11,10 +11,10 @@ diff -up OpenBLAS-0.3.5/kernel/arm64/KERNEL.THUNDERX.epel OpenBLAS-0.3.5/kernel/
  CDOTKERNEL   = zdot.S
  ZDOTKERNEL   = zdot.S
  DSDOTKERNEL  = dot.S
-diff -up OpenBLAS-0.3.5/Makefile.arm64.epel OpenBLAS-0.3.5/Makefile.arm64
---- OpenBLAS-0.3.5/Makefile.arm64.epel	2018-12-31 23:09:59.000000000 +0100
-+++ OpenBLAS-0.3.5/Makefile.arm64	2019-01-08 10:56:13.749547863 +0100
-@@ -5,36 +5,36 @@ FCOMMON_OPT += -march=armv8-a
+diff -up OpenBLAS-0.3.6/Makefile.arm64.epel OpenBLAS-0.3.6/Makefile.arm64
+--- OpenBLAS-0.3.6/Makefile.arm64.epel	2019-04-30 12:25:52.230300852 +0200
++++ OpenBLAS-0.3.6/Makefile.arm64	2019-04-30 12:27:09.204912646 +0200
+@@ -5,41 +5,41 @@ FCOMMON_OPT += -march=armv8-a
  endif
  
  ifeq ($(CORE), CORTEXA53)
@@ -62,6 +62,13 @@ diff -up OpenBLAS-0.3.5/Makefile.arm64.epel OpenBLAS-0.3.5/Makefile.arm64
  ifeq ($(CORE), THUNDERX2T99)
 -CCOMMON_OPT += -march=armv8.1-a -mtune=thunderx2t99
 -FCOMMON_OPT += -march=armv8.1-a -mtune=thunderx2t99
-+CCOMMON_OPT += -march=armv8-a
-+FCOMMON_OPT += -march=armv8-a
++CCOMMON_OPT += -march=armv8.1-a
++FCOMMON_OPT += -march=armv8.1-a
+ endif
+ 
+ ifeq ($(CORE), TSV110)
+-CCOMMON_OPT += -march=armv8.2-a -mtune=tsv110
+-FCOMMON_OPT += -march=armv8.2-a -mtune=tsv110
++CCOMMON_OPT += -march=armv8.2-a
++FCOMMON_OPT += -march=armv8.2-a
  endif

@@ -26,7 +26,7 @@ Patch0:         openblas-0.2.15-system_lapack.patch
 # Drop extra p from threaded library name
 Patch1:         openblas-0.2.5-libname.patch
 # EPEL7: patch out -mtune from aarch64 architectures since GCC is too old to support them
-Patch2:         openblas-0.3.5-epel.patch
+Patch2:         openblas-0.3.6-epel.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.2-tests.patch
 
