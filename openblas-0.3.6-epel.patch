@@ -13,7 +13,7 @@ diff -up OpenBLAS-0.3.6/kernel/arm64/KERNEL.THUNDERX.epel OpenBLAS-0.3.6/kernel/
  DSDOTKERNEL  = dot.S
 diff -up OpenBLAS-0.3.6/Makefile.arm64.epel OpenBLAS-0.3.6/Makefile.arm64
 --- OpenBLAS-0.3.6/Makefile.arm64.epel	2019-04-30 12:25:52.230300852 +0200
-+++ OpenBLAS-0.3.6/Makefile.arm64	2019-04-30 12:27:09.204912646 +0200
++++ OpenBLAS-0.3.6/Makefile.arm64	2019-04-30 13:01:16.866776311 +0200
 @@ -5,41 +5,41 @@ FCOMMON_OPT += -march=armv8-a
  endif
  
@@ -62,13 +62,13 @@ diff -up OpenBLAS-0.3.6/Makefile.arm64.epel OpenBLAS-0.3.6/Makefile.arm64
  ifeq ($(CORE), THUNDERX2T99)
 -CCOMMON_OPT += -march=armv8.1-a -mtune=thunderx2t99
 -FCOMMON_OPT += -march=armv8.1-a -mtune=thunderx2t99
-+CCOMMON_OPT += -march=armv8.1-a
-+FCOMMON_OPT += -march=armv8.1-a
++CCOMMON_OPT += -march=armv8-a
++FCOMMON_OPT += -march=armv8-a
  endif
  
  ifeq ($(CORE), TSV110)
 -CCOMMON_OPT += -march=armv8.2-a -mtune=tsv110
 -FCOMMON_OPT += -march=armv8.2-a -mtune=tsv110
-+CCOMMON_OPT += -march=armv8.2-a
-+FCOMMON_OPT += -march=armv8.2-a
++CCOMMON_OPT += -march=armv8-a
++FCOMMON_OPT += -march=armv8-a
  endif
