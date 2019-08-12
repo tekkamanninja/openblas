@@ -14,7 +14,7 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.3.6
+Version:        0.3.7
 Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
@@ -28,7 +28,7 @@ Patch1:         openblas-0.2.5-libname.patch
 # EPEL7: patch out -mtune from aarch64 architectures since GCC is too old to support them
 Patch2:         openblas-0.3.6-epel.patch
 # Supply the proper flags to the test makefile
-Patch3:         openblas-0.3.2-tests.patch
+Patch3:         openblas-0.3.7-tests.patch
 
 BuildRequires:  gcc-gfortran
 BuildRequires:  perl-devel
@@ -678,6 +678,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Aug 12 2019 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.7-1
+- Update to 0.3.7.
+
 * Tue Apr 30 2019 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.6-1
 - Update to 0.3.6.
 
