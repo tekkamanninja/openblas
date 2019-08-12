@@ -1,0 +1,21 @@
+diff -up OpenBLAS-0.3.7/Makefile.tests OpenBLAS-0.3.7/Makefile
+--- OpenBLAS-0.3.7/Makefile.tests	2019-08-11 23:23:27.000000000 +0200
++++ OpenBLAS-0.3.7/Makefile	2019-08-12 11:32:09.937281485 +0200
+@@ -123,13 +123,13 @@ tests :
+ ifeq ($(NOFORTRAN), $(filter 0,$(NOFORTRAN)))
+ 	touch $(LIBNAME)
+ ifndef NO_FBLAS
+-	$(MAKE) -C test all
++	$(MAKE) -C test FC="$(FC)" CC="$(CC)" COMMON_OPT="$(COMMON_OPT)" FCOMMON_OPT="$(FCOMMON_OPT)" all
+ endif
+-	$(MAKE) -C utest all
++	$(MAKE) -C utest FC="$(FC)" CC="$(CC)" COMMON_OPT="$(COMMON_OPT)" FCOMMON_OPT="$(FCOMMON_OPT)" all
+ ifndef NO_CBLAS
+-	$(MAKE) -C ctest all
++	$(MAKE) -C ctest FC="$(FC)" CC="$(CC)" COMMON_OPT="$(COMMON_OPT)" FCOMMON_OPT="$(FCOMMON_OPT)" all
+ ifeq ($(CPP_THREAD_SAFETY_TEST), 1)
+-	$(MAKE) -C cpp_thread_test all
++	$(MAKE) -C cpp_thread_test FC="$(FC)" CC="$(CC)" COMMON_OPT="$(COMMON_OPT)" FCOMMON_OPT="$(FCOMMON_OPT)" all
+ endif
+ endif
+ endif
