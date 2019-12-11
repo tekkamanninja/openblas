@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.7
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
@@ -30,6 +30,7 @@ Patch2:         openblas-0.2.15-constructor.patch
 Patch3:         openblas-0.3.7-tests.patch
 
 BuildRequires:  gcc
+BuildRequires:  gcc-c++
 BuildRequires:  gcc-gfortran
 BuildRequires:  perl-devel
 BuildRequires:  multilib-rpm-config
@@ -71,8 +72,10 @@ Provides:       bundled(lapack) = %{lapackver}
 # Build 64-bit interface binaries?
 %if 0%{?__isa_bits} == 64
 %global build64 1
+%bcond_without cpp_thread_check
 %else
 %global build64 0
+%bcond_with cpp_thread_check
 %endif
 
 %if %{with system_lapack}
@@ -401,7 +404,7 @@ make -C threaded   $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_O
 # USE_THREAD determines use of SMP, not of pthreads
 COMMON="%{optflags} -fPIC -fopenmp -pthread"
 FCOMMON="$COMMON -frecursive"
-make -C openmp     $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libopenblaso"     $AVX $LAPACKE INTERFACE64=0
+make -C openmp     $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libopenblaso"     $AVX $LAPACKE INTERFACE64=0 %{with cpp_thread_check:CPP_THREAD_SAFETY_TEST=1}
 
 %if %build64
 COMMON="%{optflags} -fPIC"
@@ -411,7 +414,7 @@ make -C threaded64 $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_O
 
 COMMON="%{optflags} -fPIC -fopenmp -pthread"
 FCOMMON="$COMMON -frecursive -fdefault-integer-8"
-make -C openmp64   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libopenblaso64"   $AVX $LAPACKE INTERFACE64=1
+make -C openmp64   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libopenblaso64"   $AVX $LAPACKE INTERFACE64=1 CPP_THREAD_SAFETY_TEST=1
 
 COMMON="%{optflags} -fPIC"
 FCOMMON="$COMMON -frecursive  -fdefault-integer-8"
@@ -420,7 +423,7 @@ make -C threaded64_ $TARGET USE_THREAD=1 USE_OPENMP=0 FC=gfortran CC=gcc COMMON_
 
 COMMON="%{optflags} -fPIC -fopenmp -pthread"
 FCOMMON="$COMMON -frecursive -fdefault-integer-8"
-make -C openmp64_   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libopenblaso64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_
+make -C openmp64_   $TARGET USE_THREAD=1 USE_OPENMP=1 FC=gfortran CC=gcc COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX LIBPREFIX="libopenblaso64_" $AVX $LAPACKE INTERFACE64=1 SYMBOLSUFFIX=64_ CPP_THREAD_SAFETY_TEST=1
 %endif
 
 %install
@@ -674,6 +677,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Wed Dec 11 2019 Dominik Mierzejewski <rpm@greysector.net> - 0.3.7-2
+- enable C++ thread safety test where possible
+
 * Mon Aug 12 2019 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.7-1
 - Update to 0.3.7.
 

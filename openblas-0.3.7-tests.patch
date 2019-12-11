@@ -19,3 +19,24 @@ diff -up OpenBLAS-0.3.7/Makefile.tests OpenBLAS-0.3.7/Makefile
  endif
  endif
  endif
+diff -up OpenBLAS-0.3.7/cpp_thread_test/Makefile.tests OpenBLAS-0.3.7/cpp_thread_test/Makefile
+--- OpenBLAS-0.3.7/cpp_thread_test/Makefile.tests	2019-08-11 19:23:00.000000000 +0000
++++ OpenBLAS-0.3.7/cpp_thread_test/Makefile	2019-12-12 11:05:51.426334062 +0000
+@@ -1,13 +1,14 @@
+-include ../Makefile.rule
++TOPDIR = ..
++include $(TOPDIR)/Makefile.system
+ 
+ all :: dgemv_tester dgemm_tester
+ 
+ dgemv_tester :
+-	$(CXX) $(COMMON_OPT) -Wall -Wextra -Wshadow -fopenmp -std=c++11 dgemv_thread_safety.cpp ../libopenblas.a -lpthread -o dgemv_tester
++	$(CXX) $(COMMON_OPT) -Wall -Wextra -Wshadow -fopenmp -std=c++11 dgemv_thread_safety.cpp ../$(LIBNAME) -lpthread -o dgemv_tester
+ 	./dgemv_tester
+ 
+ dgemm_tester : dgemv_tester
+-	$(CXX) $(COMMON_OPT) -Wall -Wextra -Wshadow -fopenmp -std=c++11 dgemm_thread_safety.cpp ../libopenblas.a -lpthread -o dgemm_tester
++	$(CXX) $(COMMON_OPT) -Wall -Wextra -Wshadow -fopenmp -std=c++11 dgemm_thread_safety.cpp ../$(LIBNAME) -lpthread -o dgemm_tester
+ 	./dgemm_tester
+ 
+ clean ::
