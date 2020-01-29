@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.7
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
@@ -677,6 +677,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Wed Jan 29 2020 Fedora Release Engineering <releng@fedoraproject.org> - 0.3.7-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_32_Mass_Rebuild
+
 * Wed Dec 11 2019 Dominik Mierzejewski <rpm@greysector.net> - 0.3.7-2
 - enable C++ thread safety test where possible
 
