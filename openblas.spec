@@ -31,6 +31,8 @@ Patch3:         openblas-0.3.7-tests.patch
 
 # https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2405.patch
 Patch4:         openblas-0.3.8-zarch.patch
+# https://github.com/xianyi/OpenBLAS/pull/2407
+Patch5:         openblas-0.3.8-noz15.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -245,6 +247,7 @@ cd OpenBLAS-%{version}
 %endif
 %patch3 -p1 -b .tests
 %patch4 -p1 -b .zarch
+%patch5 -p1 -b .noz15
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
