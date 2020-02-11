@@ -1,0 +1,22 @@
+From dff173e50e01d94e0741e4b4eaa1cf0aa01cf320 Mon Sep 17 00:00:00 2001
+From: Susi Lehtola <susi.lehtola@alumni.helsinki.fi>
+Date: Tue, 11 Feb 2020 14:46:30 +1300
+Subject: [PATCH] Fix typo in dynamic_zarch.c
+
+---
+ driver/others/dynamic_zarch.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/driver/others/dynamic_zarch.c b/driver/others/dynamic_zarch.c
+index 1206bf870..896e65bb4 100644
+--- a/driver/others/dynamic_zarch.c
++++ b/driver/others/dynamic_zarch.c
+@@ -31,7 +31,7 @@ char* gotoblas_corename(void) {
+ }
+ 
+ // __builtin_cpu_is is not supported by zarch
+-static gotolabs_t* get_coretype(void) {
++static gotoblas_t* get_coretype(void) {
+ 	FILE* infile;
+ 	char buffer[512], * p;
+ 

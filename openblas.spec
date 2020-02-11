@@ -29,6 +29,9 @@ Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.7-tests.patch
 
+# https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2405.patch
+Patch4:         openblas-0.3.8-zarch.patch
+
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  gcc-gfortran
@@ -241,6 +244,7 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
+%patch4 -p1 -b .zarch
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
