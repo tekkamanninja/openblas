@@ -1,6 +1,6 @@
 %bcond_with system_lapack
 # Version of bundled lapack
-%global lapackver 3.8.0
+%global lapackver 3.9.0
 
 # DO NOT "CLEAN UP" OR MODIFY THIS SPEC FILE WITHOUT ASKING THE
 # MAINTAINER FIRST!
@@ -14,8 +14,8 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.3.7
-Release:        3%{?dist}
+Version:        0.3.8
+Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
@@ -364,22 +364,22 @@ export AVX="NO_AVX2=1"
 
 %endif
 %ifarch armv7hl
-TARGET="TARGET=ARMV7 DYNAMIC_ARCH=0"
+TARGET="TARGET=ARMV7 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 %endif
 %ifarch ppc64
-TARGET="TARGET=POWER6 DYNAMIC_ARCH=0"
+TARGET="TARGET=POWER6 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 %endif
 %ifarch ppc64p7
-TARGET="TARGET=POWER7 DYNAMIC_ARCH=0"
+TARGET="TARGET=POWER7 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 %endif
 %ifarch ppc64le
-TARGET="TARGET=POWER8 DYNAMIC_ARCH=0"
+TARGET="TARGET=POWER8 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 %endif
 %ifarch aarch64
-TARGET="TARGET=ARMV8 DYNAMIC_ARCH=1"
+TARGET="TARGET=ARMV8 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 %endif
 %ifarch s390x
-TARGET="TARGET=ZARCH_GENERIC DYNAMIC_ARCH=0"
+TARGET="TARGET=ZARCH_GENERIC DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 %endif
 
 %if 0%{?rhel} == 5
@@ -440,33 +440,9 @@ cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 %multilib_fix_c_header --file %{_includedir}/openblas/openblas_config.h
 
 # Fix name of libraries
-suffix=""
-%ifarch armv7hl
-suffix="_armv7"
-%endif
-%ifarch ppc64
-suffix="_power6"
-%endif
-%ifarch ppc64p7
-suffix="_power7"
-%endif
-%ifarch ppc64le
-suffix="_power8"
-%endif
-%ifarch aarch64
-# Runtime CPU detection, no suffix
-%endif
-%ifarch s390x
-suffix="_zarch_generic"
-%endif
-slibname=`basename %{buildroot}%{_libdir}/libopenblas${suffix}-*.so .so`
+slibname=`basename %{buildroot}%{_libdir}/libopenblas-*.so .so`
 mv %{buildroot}%{_libdir}/${slibname}.a %{buildroot}%{_libdir}/lib%{name}.a
-if [[ "$suffix" != "" ]]; then
-   sname=$(echo $slibname | sed "s|$suffix||g")
-   mv %{buildroot}%{_libdir}/${slibname}.so %{buildroot}%{_libdir}/${sname}.so
-else
-   sname=${slibname}
-fi
+sname=${slibname}
 
 # Install the Rblas library
 mkdir -p %{buildroot}%{_libdir}/R/lib/
@@ -499,13 +475,8 @@ install -D -p -m 644 serial64/${slibname64}.a %{buildroot}%{_libdir}/lib%{name}6
 slibname64_=`echo ${slibname} | sed "s|lib%{name}|lib%{name}64_|g"`
 install -D -p -m 644 serial64_/${slibname64_}.a %{buildroot}%{_libdir}/lib%{name}64_.a
 
-if [[ "$suffix" != "" ]]; then
-   sname64=$(echo ${slibname64} | sed "s|$suffix||g")
-   sname64_=$(echo ${slibname64_} | sed "s|$suffix||g")
-else
-   sname64=${slibname64}
-   sname64_=${slibname64_}
-fi
+sname64=${slibname64}
+sname64_=${slibname64_}
 install -D -p -m 755 serial64/${slibname64}.so %{buildroot}%{_libdir}/${sname64}.so
 install -D -p -m 755 serial64_/${slibname64_}.so %{buildroot}%{_libdir}/${sname64_}.so
 
@@ -677,6 +648,10 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Tue Feb 11 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.8-1
+- Update to 0.3.8; dynamic runtime cpu detection on all architectures.
+- Also updates bundled LAPACK to 3.9.0.
+
 * Wed Jan 29 2020 Fedora Release Engineering <releng@fedoraproject.org> - 0.3.7-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_32_Mass_Rebuild
 
