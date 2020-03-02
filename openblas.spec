@@ -14,7 +14,7 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.3.8
+Version:        0.3.9
 Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
@@ -28,11 +28,6 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.7-tests.patch
-
-# https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2405.patch
-Patch4:         openblas-0.3.8-zarch.patch
-# https://github.com/xianyi/OpenBLAS/pull/2407
-Patch5:         openblas-0.3.8-noz15.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -246,8 +241,6 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
-%patch4 -p1 -b .zarch
-%patch5 -p1 -b .noz15
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -671,6 +664,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Mon Mar 02 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.9-1
+- Update to 0.3.9.
+
 * Tue Feb 11 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.8-1
 - Update to 0.3.8; dynamic runtime cpu detection on all architectures.
 - Also updates bundled LAPACK to 3.9.0.
