@@ -1,6 +1,6 @@
 %bcond_with system_lapack
 # Version of bundled lapack
-%global lapackver 3.8.0
+%global lapackver 3.9.0
 
 # DO NOT "CLEAN UP" OR MODIFY THIS SPEC FILE WITHOUT ASKING THE
 # MAINTAINER FIRST!
@@ -14,7 +14,7 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.3.7
+Version:        0.3.9
 Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 Group:          Development/Libraries
@@ -360,19 +360,19 @@ export AVX="NO_AVX2=1"
 TARGET="TARGET=ARMV7 DYNAMIC_ARCH=0"
 %endif
 %ifarch ppc64
-TARGET="TARGET=POWER6 DYNAMIC_ARCH=0"
+TARGET="TARGET=POWER6 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 %endif
 %ifarch ppc64p7
-TARGET="TARGET=POWER7 DYNAMIC_ARCH=0"
+TARGET="TARGET=POWER7 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 %endif
 %ifarch ppc64le
-TARGET="TARGET=POWER8 DYNAMIC_ARCH=0"
+TARGET="TARGET=POWER8 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 %endif
 %ifarch aarch64
-TARGET="TARGET=ARMV8 DYNAMIC_ARCH=1"
+TARGET="TARGET=ARMV8 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 %endif
 %ifarch s390x
-TARGET="TARGET=ZARCH_GENERIC DYNAMIC_ARCH=0"
+TARGET="TARGET=ZARCH_GENERIC DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 %endif
 
 %if 0%{?rhel} == 5
@@ -435,21 +435,6 @@ cp -a %{_includedir}/lapacke %{buildroot}%{_includedir}/%{name}
 suffix=""
 %ifarch armv7hl
 suffix="_armv7"
-%endif
-%ifarch ppc64
-suffix="_power6"
-%endif
-%ifarch ppc64p7
-suffix="_power7"
-%endif
-%ifarch ppc64le
-suffix="_power8"
-%endif
-%ifarch aarch64
-# Dynamic CPU detection so no suffix
-%endif
-%ifarch s390x
-suffix="_zarch_generic"
 %endif
 slibname=`basename %{buildroot}%{_libdir}/libopenblas${suffix}-*.so .so`
 mv %{buildroot}%{_libdir}/${slibname}.a %{buildroot}%{_libdir}/lib%{name}.a
@@ -678,6 +663,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Mar 04 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.9-1
+- Update to 0.3.9.
+
 * Mon Aug 12 2019 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.7-1
 - Update to 0.3.7.
 
