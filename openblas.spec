@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.9
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
@@ -28,6 +28,9 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.7-tests.patch
+
+# Fix C++ compatibility (BZ #1820131)
+Patch4:         https://github.com/xianyi/OpenBLAS/commit/ee2e758278b5d82b7242f505ea694f082ef65879.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -241,6 +244,7 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
+%patch4 -p1 -b .cplusplus
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -664,6 +668,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Thu Apr 02 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.9-2
+- Patch for BZ #1820131.
+
 * Mon Mar 02 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.9-1
 - Update to 0.3.9.
 
