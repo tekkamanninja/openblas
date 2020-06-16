@@ -29,6 +29,9 @@ Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.7-tests.patch
 
+# Fix broken detection for z13 support
+Patch4:         https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2669.patch
+
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  gcc-gfortran
@@ -241,6 +244,7 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
+%patch4 -p1 -b .s390x
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -380,7 +384,7 @@ TARGET="TARGET=POWER8 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 TARGET="TARGET=ARMV8 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 %endif
 %ifarch s390x
-TARGET="TARGET=ZARCH_GENERIC DYNAMIC_ARCH=1"
+TARGET="TARGET=ZARCH_GENERIC DYNAMIC_ARCH=1 DYNAMIC_OLDER=1"
 %endif
 
 %if 0%{?rhel} == 5
