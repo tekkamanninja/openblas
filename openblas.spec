@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.10
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
@@ -30,7 +30,10 @@ Patch2:         openblas-0.2.15-constructor.patch
 Patch3:         openblas-0.3.7-tests.patch
 
 # Fix broken detection for z13 support
-Patch4:         https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2669.patch
+Patch4:         https://github.com/xianyi/OpenBLAS/pull/2669.patch
+
+# Fix test suite failure for <= 4 CPUs
+Patch5:         https://github.com/xianyi/OpenBLAS/pull/2672.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -245,6 +248,7 @@ cd OpenBLAS-%{version}
 %endif
 %patch3 -p1 -b .tests
 %patch4 -p1 -b .s390x
+%patch5 -p1 -b .fewcpus
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -668,6 +672,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Tue Jul 28 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.10-2
+- Include upstream patch 2672 to fix test suite on systems with few CPUs.
+
 * Mon Jun 15 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.10-1
 - Update to 0.3.10.
 
