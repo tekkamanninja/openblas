@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.10
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
@@ -352,6 +352,9 @@ rm -rf netliblapack64
 %endif
 
 %build
+# openblas fails to build with LTO due to undefined symbols.  These could
+# well be the result of the assembly code used in this package
+%define _lto_cflags %{nil}
 %if !%{lapacke}
 LAPACKE="NO_LAPACKE=1"
 %endif
@@ -672,6 +675,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Tue Aug 11 2020 Jeff Law <law@redhat.com> - 0.3.10-3
+- Disable LTO
+
 * Tue Jul 28 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.10-2
 - Include upstream patch 2672 to fix test suite on systems with few CPUs.
 
