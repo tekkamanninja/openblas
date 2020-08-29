@@ -26,17 +26,15 @@ Patch0:         openblas-0.2.15-system_lapack.patch
 Patch1:         openblas-0.2.5-libname.patch
 # Don't use constructor priorities on too old architectures
 Patch2:         openblas-0.2.15-constructor.patch
+# Fix broken detection for z13 support
+Patch4:         https://github.com/xianyi/OpenBLAS/pull/2669.patch
+# Fix test suite failure for <= 4 CPUs
+Patch5:         https://github.com/xianyi/OpenBLAS/pull/2672.patch
+# Resolve undefined bfloat16 datatype (BZ #1873667)
+Patch6:         https://github.com/xianyi/OpenBLAS/pull/2784.patch 
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.7-tests.patch
 
-# Fix broken detection for z13 support
-Patch4:         https://github.com/xianyi/OpenBLAS/pull/2669.patch
-
-# Fix test suite failure for <= 4 CPUs
-Patch5:         https://github.com/xianyi/OpenBLAS/pull/2672.patch
-
-# Resolve undefined bfloat16 datatype (BZ #1873667)
-Patch6:         https://github.com/xianyi/OpenBLAS/pull/2784.patch 
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -248,10 +246,10 @@ cd OpenBLAS-%{version}
 %if 0%{?rhel} == 5
 %patch2 -p1 -b .constructor
 %endif
-%patch3 -p1 -b .tests
 %patch4 -p1 -b .s390x
 %patch5 -p1 -b .fewcpus
 %patch6 -p1 -b .bfloat16
+%patch3 -p1 -b .tests
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
