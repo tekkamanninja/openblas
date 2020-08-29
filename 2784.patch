@@ -1,0 +1,363 @@
+From f5fcc5baec1c5aea7dbd7a2a8fdd41ae8b422a6e Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Sat, 15 Aug 2020 13:30:29 +0200
+Subject: [PATCH 01/10] Add trivial gemm test for multithread consistency
+
+---
+ cpp_thread_test/gemm64.cpp | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+ create mode 100644 cpp_thread_test/gemm64.cpp
+
+diff --git a/cpp_thread_test/gemm64.cpp b/cpp_thread_test/gemm64.cpp
+new file mode 100644
+index 000000000..2c3442a2e
+--- /dev/null
++++ b/cpp_thread_test/gemm64.cpp
+@@ -0,0 +1,20 @@
++#include <iostream>
++#include <cblas.h>
++int main ( int argc, char* argv[] ) {
++    const long n = ((long)1 << 31) - 1;
++    std::cout << n <<std::endl;
++    float*  A = new float[n];
++    float*  B = new float[n];
++    float*  C = new float[1];
++    for(long i =0; i <n; i++){
++        A[i] = 1;
++        B[i] = 1;
++
++    }
++    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 1, 1, n,  1.0, A, n, B, 1, 0.0, C, 1);
++    std::cout << *C <<std::endl;
++    delete[] A;
++    delete[] B;
++    delete[] C;
++    return 0;
++}
+
+From 47ce1dd08fc9c5e66b6ac22e68152a189eeac2c9 Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Sat, 15 Aug 2020 13:31:28 +0200
+Subject: [PATCH 02/10] Update gemm64.cpp
+
+---
+ cpp_thread_test/gemm64.cpp | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/cpp_thread_test/gemm64.cpp b/cpp_thread_test/gemm64.cpp
+index 2c3442a2e..df38416fa 100644
+--- a/cpp_thread_test/gemm64.cpp
++++ b/cpp_thread_test/gemm64.cpp
+@@ -1,5 +1,6 @@
+ #include <iostream>
+-#include <cblas.h>
++#include "common.h"
++#include "cblas.h"
+ int main ( int argc, char* argv[] ) {
+     const long n = ((long)1 << 31) - 1;
+     std::cout << n <<std::endl;
+
+From 6a93e3b2bae7d7979b1edd538d5d5972836900bb Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Sat, 15 Aug 2020 13:33:52 +0200
+Subject: [PATCH 03/10] Add simple sgemm preicsion test
+
+---
+ cpp_thread_test/Makefile | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/cpp_thread_test/Makefile b/cpp_thread_test/Makefile
+index 81e3470ef..0dc7229d7 100644
+--- a/cpp_thread_test/Makefile
++++ b/cpp_thread_test/Makefile
+@@ -10,5 +10,9 @@ dgemm_tester : dgemv_tester
+ 	$(CXX) $(COMMON_OPT) -Wall -Wextra -Wshadow -fopenmp -std=c++11 dgemm_thread_safety.cpp ../libopenblas.a -lpthread -o dgemm_tester
+ 	./dgemm_tester
+ 
++gemm64 : gemm64
++	$(CXX) $(COMMON_OPT) -Wall -Wextra -Wshadow -fopenmp -std=c++11 gemm64.cpp ../libopenblas.a -lpthread -o gemm64
++	./gemm64
++
+ clean ::
+-	rm -f dgemv_tester dgemm_tester
++	rm -f dgemv_tester dgemm_tester gemm64
+
+From 37ac23e8a36049d875d01887b292ec11751fccc8 Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Sat, 15 Aug 2020 13:38:05 +0200
+Subject: [PATCH 04/10] Add simple MT sgemm precision test and INTERFACE64
+ build
+
+---
+ .drone.yml | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+diff --git a/.drone.yml b/.drone.yml
+index b1c211d14..fb009d46e 100644
+--- a/.drone.yml
++++ b/.drone.yml
+@@ -190,3 +190,29 @@ steps:
+     - make -C ctest $COMMON_FLAGS
+     - make -C utest $COMMON_FLAGS
+     - make -C cpp_thread_test dgemm_tester
++    - make -C cpp_thread_test gemm64
++---
++kind: pipeline
++name: epyc_native_test_int64
++
++platform:
++  os: linux
++  arch: amd64
++
++steps:
++- name: Build and Test
++  image: ubuntu:18.04
++  environment:
++    CC: gcc
++    COMMON_FLAGS: 'USE_OPENMP=1 INTERFACE64=1'
++  commands:
++    - echo "MAKE_FLAGS:= $COMMON_FLAGS"
++    - apt-get update -y
++    - apt-get install -y make $CC gfortran perl python g++
++    - $CC --version
++    - make QUIET_MAKE=1 $COMMON_FLAGS
++    - make -C test $COMMON_FLAGS
++    - make -C ctest $COMMON_FLAGS
++    - make -C utest $COMMON_FLAGS
++    - make -C cpp_thread_test dgemm_tester
++    - make -C cpp_thread_test gemm64
+
+From d57d503c150bb40e1478b88735818c1b76d64ed2 Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Sat, 15 Aug 2020 14:46:26 +0200
+Subject: [PATCH 05/10] Update Makefile
+
+---
+ cpp_thread_test/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cpp_thread_test/Makefile b/cpp_thread_test/Makefile
+index 0dc7229d7..0d78990eb 100644
+--- a/cpp_thread_test/Makefile
++++ b/cpp_thread_test/Makefile
+@@ -11,7 +11,7 @@ dgemm_tester : dgemv_tester
+ 	./dgemm_tester
+ 
+ gemm64 : gemm64
+-	$(CXX) $(COMMON_OPT) -Wall -Wextra -Wshadow -fopenmp -std=c++11 gemm64.cpp ../libopenblas.a -lpthread -o gemm64
++	$(CXX) $(COMMON_OPT) -I.. -Wall -Wextra -Wshadow -fopenmp -std=c++11 gemm64.cpp ../libopenblas.a -lpthread -o gemm64
+ 	./gemm64
+ 
+ clean ::
+
+From 82f8a0aebabab6e81386b75b6f172abb692dd31c Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Sat, 15 Aug 2020 15:46:18 +0200
+Subject: [PATCH 06/10] Update .drone.yml
+
+---
+ .drone.yml | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+diff --git a/.drone.yml b/.drone.yml
+index fb009d46e..e8353eb5c 100644
+--- a/.drone.yml
++++ b/.drone.yml
+@@ -166,6 +166,32 @@ steps:
+     - make -C ctest $COMMON_FLAGS
+     - make -C utest $COMMON_FLAGS
+     - make -C cpp_thread_test dgemm_tester
++    - make -C cpp_thread_test gemm64
++---
++kind: pipeline
++name: arm64_native_test_int64
++
++platform:
++  os: linux
++  arch: arm64
++
++steps:
++- name: Build and Test
++  image: ubuntu:18.04
++  environment:
++    CC: gcc
++    COMMON_FLAGS: 'USE_OPENMP=1 INTERFACE64=1'
++  commands:
++    - echo "MAKE_FLAGS:= $COMMON_FLAGS"
++    - apt-get update -y
++    - apt-get install -y make $CC gfortran perl python g++
++    - $CC --version
++    - make QUIET_MAKE=1 $COMMON_FLAGS
++    - make -C test $COMMON_FLAGS
++    - make -C ctest $COMMON_FLAGS
++    - make -C utest $COMMON_FLAGS
++    - make -C cpp_thread_test dgemm_tester
++    - make -C cpp_thread_test gemm64
+ ---
+ kind: pipeline
+ name: epyc_native_test
+
+From 5ec8f716cf181b70352fa15a7beb45fc886312de Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Mon, 17 Aug 2020 15:19:40 +0200
+Subject: [PATCH 07/10] revert
+
+---
+ .drone.yml | 52 ----------------------------------------------------
+ 1 file changed, 52 deletions(-)
+
+diff --git a/.drone.yml b/.drone.yml
+index e8353eb5c..b1c211d14 100644
+--- a/.drone.yml
++++ b/.drone.yml
+@@ -166,32 +166,6 @@ steps:
+     - make -C ctest $COMMON_FLAGS
+     - make -C utest $COMMON_FLAGS
+     - make -C cpp_thread_test dgemm_tester
+-    - make -C cpp_thread_test gemm64
+----
+-kind: pipeline
+-name: arm64_native_test_int64
+-
+-platform:
+-  os: linux
+-  arch: arm64
+-
+-steps:
+-- name: Build and Test
+-  image: ubuntu:18.04
+-  environment:
+-    CC: gcc
+-    COMMON_FLAGS: 'USE_OPENMP=1 INTERFACE64=1'
+-  commands:
+-    - echo "MAKE_FLAGS:= $COMMON_FLAGS"
+-    - apt-get update -y
+-    - apt-get install -y make $CC gfortran perl python g++
+-    - $CC --version
+-    - make QUIET_MAKE=1 $COMMON_FLAGS
+-    - make -C test $COMMON_FLAGS
+-    - make -C ctest $COMMON_FLAGS
+-    - make -C utest $COMMON_FLAGS
+-    - make -C cpp_thread_test dgemm_tester
+-    - make -C cpp_thread_test gemm64
+ ---
+ kind: pipeline
+ name: epyc_native_test
+@@ -216,29 +190,3 @@ steps:
+     - make -C ctest $COMMON_FLAGS
+     - make -C utest $COMMON_FLAGS
+     - make -C cpp_thread_test dgemm_tester
+-    - make -C cpp_thread_test gemm64
+----
+-kind: pipeline
+-name: epyc_native_test_int64
+-
+-platform:
+-  os: linux
+-  arch: amd64
+-
+-steps:
+-- name: Build and Test
+-  image: ubuntu:18.04
+-  environment:
+-    CC: gcc
+-    COMMON_FLAGS: 'USE_OPENMP=1 INTERFACE64=1'
+-  commands:
+-    - echo "MAKE_FLAGS:= $COMMON_FLAGS"
+-    - apt-get update -y
+-    - apt-get install -y make $CC gfortran perl python g++
+-    - $CC --version
+-    - make QUIET_MAKE=1 $COMMON_FLAGS
+-    - make -C test $COMMON_FLAGS
+-    - make -C ctest $COMMON_FLAGS
+-    - make -C utest $COMMON_FLAGS
+-    - make -C cpp_thread_test dgemm_tester
+-    - make -C cpp_thread_test gemm64
+
+From a8c6fb9e1ce4d6cb3d4e8a782f9c4c69469aae91 Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Mon, 17 Aug 2020 15:20:16 +0200
+Subject: [PATCH 08/10] revert
+
+---
+ cpp_thread_test/Makefile | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/cpp_thread_test/Makefile b/cpp_thread_test/Makefile
+index 0d78990eb..81e3470ef 100644
+--- a/cpp_thread_test/Makefile
++++ b/cpp_thread_test/Makefile
+@@ -10,9 +10,5 @@ dgemm_tester : dgemv_tester
+ 	$(CXX) $(COMMON_OPT) -Wall -Wextra -Wshadow -fopenmp -std=c++11 dgemm_thread_safety.cpp ../libopenblas.a -lpthread -o dgemm_tester
+ 	./dgemm_tester
+ 
+-gemm64 : gemm64
+-	$(CXX) $(COMMON_OPT) -I.. -Wall -Wextra -Wshadow -fopenmp -std=c++11 gemm64.cpp ../libopenblas.a -lpthread -o gemm64
+-	./gemm64
+-
+ clean ::
+-	rm -f dgemv_tester dgemm_tester gemm64
++	rm -f dgemv_tester dgemm_tester
+
+From 6bfc66663c4b3bbd2c5f7ac05a150d2c4bd94af4 Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Mon, 17 Aug 2020 15:20:41 +0200
+Subject: [PATCH 09/10] revert
+
+---
+ cpp_thread_test/gemm64.cpp | 21 ---------------------
+ 1 file changed, 21 deletions(-)
+ delete mode 100644 cpp_thread_test/gemm64.cpp
+
+diff --git a/cpp_thread_test/gemm64.cpp b/cpp_thread_test/gemm64.cpp
+deleted file mode 100644
+index df38416fa..000000000
+--- a/cpp_thread_test/gemm64.cpp
++++ /dev/null
+@@ -1,21 +0,0 @@
+-#include <iostream>
+-#include "common.h"
+-#include "cblas.h"
+-int main ( int argc, char* argv[] ) {
+-    const long n = ((long)1 << 31) - 1;
+-    std::cout << n <<std::endl;
+-    float*  A = new float[n];
+-    float*  B = new float[n];
+-    float*  C = new float[1];
+-    for(long i =0; i <n; i++){
+-        A[i] = 1;
+-        B[i] = 1;
+-
+-    }
+-    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 1, 1, n,  1.0, A, n, B, 1, 0.0, C, 1);
+-    std::cout << *C <<std::endl;
+-    delete[] A;
+-    delete[] B;
+-    delete[] C;
+-    return 0;
+-}
+
+From aa286e301b3a4883970107eddb8f02744bdf2fc9 Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Mon, 17 Aug 2020 15:32:14 +0200
+Subject: [PATCH 10/10] Add typedef for bfloat16 if needed
+
+---
+ openblas_config_template.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/openblas_config_template.h b/openblas_config_template.h
+index 49aea1cab..9955e5c73 100644
+--- a/openblas_config_template.h
++++ b/openblas_config_template.h
+@@ -34,6 +34,10 @@ typedef long BLASLONG;
+ typedef unsigned long BLASULONG;
+ #endif
+ 
++#ifndef BFLOAT16
++typedef unsigned short bfloat16;
++#endif
++
+ #ifdef OPENBLAS_USE64BITINT
+ typedef BLASLONG blasint;
+ #else

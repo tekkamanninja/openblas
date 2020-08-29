@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.10
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
@@ -34,6 +34,9 @@ Patch4:         https://github.com/xianyi/OpenBLAS/pull/2669.patch
 
 # Fix test suite failure for <= 4 CPUs
 Patch5:         https://github.com/xianyi/OpenBLAS/pull/2672.patch
+
+# Resolve undefined bfloat16 datatype (BZ #1873667)
+Patch6:         https://github.com/xianyi/OpenBLAS/pull/2784.patch 
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -248,6 +251,7 @@ cd OpenBLAS-%{version}
 %patch3 -p1 -b .tests
 %patch4 -p1 -b .s390x
 %patch5 -p1 -b .fewcpus
+%patch6 -p1 -b .bfloat16
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -653,6 +657,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Sat Aug 29 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.10-5
+- Fix unresolved bfloat16 datatype (BZ #1873667).
+
 * Fri Aug 14 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.10-4
 - Obsolete Rblas package (BZ #1849966).
 
