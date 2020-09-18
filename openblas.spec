@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.10
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
@@ -34,7 +34,8 @@ Patch5:         https://github.com/xianyi/OpenBLAS/pull/2672.patch
 Patch6:         https://github.com/xianyi/OpenBLAS/pull/2784.patch 
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.7-tests.patch
-
+# Fix zdotc on ppc64le (BZ #1878449)
+Patch7:         openblas-0.3.10-zdot-ppc64le.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -250,6 +251,7 @@ cd OpenBLAS-%{version}
 %patch5 -p1 -b .fewcpus
 %patch6 -p1 -b .bfloat16
 %patch3 -p1 -b .tests
+%patch7 -p1 -b .ppc64le
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -655,6 +657,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Fri Sep 18 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.10-6
+- Fix incorrect result of cblas_zdotc_sub on ppc64le (BZ #1878449).
+
 * Sat Aug 29 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.10-5
 - Fix unresolved bfloat16 datatype (BZ #1873667).
 
