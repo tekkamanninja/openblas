@@ -29,6 +29,9 @@ Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.11-tests.patch
 
+# Fix compile on power10
+Patch4:         openblas-0.3.11-override.patch
+
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  gcc-gfortran
@@ -240,6 +243,7 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
+%patch4 -p1 -b .override
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
