@@ -1,12 +1,12 @@
 diff -up OpenBLAS-0.3.11/Makefile.power.override OpenBLAS-0.3.11/Makefile.power
 --- OpenBLAS-0.3.11/Makefile.power.override	2020-10-17 22:14:12.000000000 +0200
-+++ OpenBLAS-0.3.11/Makefile.power	2020-10-19 16:12:10.351740456 +0200
++++ OpenBLAS-0.3.11/Makefile.power	2020-10-19 18:20:47.405149589 +0200
 @@ -10,7 +10,7 @@ USE_OPENMP = 1
  endif
  
  ifeq ($(CORE), POWER10)
 -COMMON_OPT += -Ofast -mcpu=power10 -mtune=power10 -mvsx  -fno-fast-math
-+override COMMON_OPT += -Ofast -mcpu=power10 -mtune=power10 -mvsx  -fno-fast-math
++CCOMMON_OPT += -Ofast -mcpu=power10 -mtune=power10 -mvsx  -fno-fast-math
  FCOMMON_OPT += -O2 -frecursive -mcpu=power10 -mtune=power10  -fno-fast-math
  endif
  
