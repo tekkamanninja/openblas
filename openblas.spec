@@ -14,7 +14,7 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.3.11
+Version:        0.3.12
 Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
@@ -28,9 +28,6 @@ Patch1:         openblas-0.2.5-libname.patch
 Patch2:         openblas-0.2.15-constructor.patch
 # Supply the proper flags to the test makefile
 Patch3:         openblas-0.3.11-tests.patch
-
-# Fix compile on power10
-Patch4:         openblas-0.3.11-override.patch
 
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -243,7 +240,6 @@ cd OpenBLAS-%{version}
 %patch2 -p1 -b .constructor
 %endif
 %patch3 -p1 -b .tests
-%patch4 -p1 -b .override
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -649,6 +645,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Sun Oct 25 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.12-1
+- Update to 0.3.12.
+
 * Sun Oct 18 2020 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.11-1
 - Update to 0.3.11.
 
