@@ -1,6 +1,6 @@
 %bcond_with system_lapack
 # Version of bundled lapack
-%global lapackver 3.9.0
+%global lapackver 3.9.1
 
 # DO NOT "CLEAN UP" OR MODIFY THIS SPEC FILE WITHOUT ASKING THE
 # MAINTAINER FIRST!
@@ -14,7 +14,7 @@
 # "obsoleted" features are still kept in the spec.
 
 Name:           openblas
-Version:        0.3.14
+Version:        0.3.15
 Release:        1%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
@@ -646,6 +646,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Mon May 03 2021 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.15-1
+- Update to 0.3.15.
+
 * Thu Mar 18 2021 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.14-1
 - Update to 0.3.14.
 
