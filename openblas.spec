@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.17
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
@@ -646,6 +646,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Thu Jul 22 2021 Fedora Release Engineering <releng@fedoraproject.org> - 0.3.17-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_35_Mass_Rebuild
+
 * Mon Jul 19 2021 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.17-1
 - Update to 0.3.17.
 
