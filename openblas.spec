@@ -15,7 +15,7 @@
 
 Name:           openblas
 Version:        0.3.19
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD
 URL:            https://github.com/xianyi/OpenBLAS/
@@ -26,6 +26,8 @@ Patch0:         openblas-0.2.15-system_lapack.patch
 Patch1:         openblas-0.2.5-libname.patch
 # Don't use constructor priorities on too old architectures
 Patch2:         openblas-0.2.15-constructor.patch
+# Fix BZ#1982856
+Patch3:         https://github.com/xianyi/OpenBLAS/pull/3498.patch
 
 BuildRequires: make
 BuildRequires:  gcc
@@ -238,6 +240,7 @@ cd OpenBLAS-%{version}
 %if 0%{?rhel} == 5
 %patch2 -p1 -b .constructor
 %endif
+%patch3 -p1 -b .bz1982856
 
 # Fix source permissions
 find -name \*.f -exec chmod 644 {} \;
@@ -643,6 +646,9 @@ rm -rf %{buildroot}%{_libdir}/pkgconfig
 %endif
 
 %changelog
+* Mon Jan 03 2022 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.19-2
+- Fix BZ#1982856.
+
 * Sun Dec 19 2021 Susi Lehtola <jussilehtola@fedoraproject.org> - 0.3.19-1
 - Update to 0.3.19.
 
